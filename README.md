@@ -9,6 +9,7 @@ MVP Django para registo de horas por colaborador, semana, cliente e projeto, com
 - Cada projeto define as tarifas por hora normal, extra e de domingo, em euros.
 - Registo diário de segunda-feira a domingo; até 8 horas por dia útil são normais, o excedente e todas as horas de sábado são extra. As horas de domingo usam exclusivamente a tarifa de domingo e não acumulam com a tarifa extra.
 - A folha apresenta horas e valores por categoria, por dia e no total semanal; os valores são arredondados aos cêntimos por categoria e dia.
+- A interface pode ser utilizada em português de Portugal ou inglês. Cada utilizador autenticado pode escolher o idioma no seletor do cabeçalho; a preferência fica guardada na conta. Sem preferência, usa-se português de Portugal. A escolha também é memorizada num cookie para utilizadores não autenticados.
 - Submissão, aprovação ou devolução com nota e histórico de estados.
 - O aprovador acede com uma conta cujo email corresponde ao email configurado no projeto; administradores podem consultar todas as folhas.
 - Validação de semana à segunda-feira, relação cliente/projeto, duplicados, horas e pausas.
@@ -75,3 +76,12 @@ python manage.py test --settings=config.test_settings
 ```
 
 O serviço da aplicação e o deployment usam sempre PostgreSQL.
+
+### Traduções
+
+O Django fornece as traduções nativas de autenticação e administração para português europeu. As traduções da aplicação em inglês estão em `locale/en/LC_MESSAGES/django.po` e o ficheiro compilado é usado em execução. Ao alterar ou acrescentar texto marcado para tradução, compile o catálogo com GNU gettext instalado:
+
+```sh
+python manage.py makemessages -l en
+python manage.py compilemessages
+```

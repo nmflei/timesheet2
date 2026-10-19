@@ -1,10 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Aprovações{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Aprovações" %}{% endblock %}
 {% block content %}
-<h1>Folhas para aprovação</h1>
+<h1>{% trans "Folhas para aprovação" %}</h1>
 <section class="panel">
-  {% if timesheets %}<div class="table-wrap"><table><thead><tr><th>Colaborador</th><th>Semana</th><th>Cliente / projeto</th><th>Total de horas</th><th>Valor</th><th></th></tr></thead><tbody>
-    {% for sheet in timesheets %}<tr><td>{{ sheet.employee.get_full_name|default:sheet.employee.username }}</td><td>{{ sheet.week_start|date:"d/m/Y" }}</td><td>{{ sheet.client }}<br><span class="muted">{{ sheet.project.name }}</span></td><td>{{ sheet.total_hours|floatformat:2 }} h</td><td>{{ sheet.total_amount|floatformat:2 }} €</td><td><a class="button secondary small" href="{% url 'timesheet_detail' sheet.pk %}">Rever</a></td></tr>{% endfor %}
-  </tbody></table></div>{% else %}<p class="empty">Não existem folhas pendentes de aprovação.</p>{% endif %}
+  {% if timesheets %}<div class="table-wrap"><table><thead><tr><th>{% trans "Colaborador" %}</th><th>{% trans "Semana" %}</th><th>{% trans "Cliente / projeto" %}</th><th>{% trans "Total de horas" %}</th><th>{% trans "Valor" %}</th><th></th></tr></thead><tbody>
+    {% for sheet in timesheets %}<tr><td>{{ sheet.employee.get_full_name|default:sheet.employee.username }}</td><td>{{ sheet.week_start|date:"DATE_FORMAT" }}</td><td>{{ sheet.client }}<br><span class="muted">{{ sheet.project.name }}</span></td><td>{{ sheet.total_hours|floatformat:2 }} h</td><td>{{ sheet.total_amount|floatformat:2 }} €</td><td><a class="button secondary small" href="{% url 'timesheet_detail' sheet.pk %}">{% trans "Rever" %}</a></td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<p class="empty">{% trans "Não existem folhas pendentes de aprovação." %}</p>{% endif %}
 </section>
 {% endblock %}

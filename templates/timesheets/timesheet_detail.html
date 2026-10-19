@@ -1,28 +1,29 @@
 {% extends "base.html" %}
-{% block title %}Folha semanal{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Folha semanal" %}{% endblock %}
 {% block content %}
 <div class="page-heading">
-  <div><h1>Folha semanal</h1><p class="muted">Semana de {{ timesheet.week_start|date:"d/m/Y" }} · {{ timesheet.employee.get_full_name|default:timesheet.employee.username }}</p></div>
+  <div><h1>{% trans "Folha semanal" %}</h1><p class="muted">{% trans "Semana de" %} {{ timesheet.week_start|date:"DATE_FORMAT" }} · {{ timesheet.employee.get_full_name|default:timesheet.employee.username }}</p></div>
   <span class="status status-{{ timesheet.status }}">{{ timesheet.get_status_display }}</span>
 </div>
 <section class="panel">
   <div class="summary-grid">
-    <div><span class="muted">Cliente</span><strong>{{ timesheet.client }}</strong></div>
-    <div><span class="muted">Projeto</span><strong>{{ timesheet.project.name }}</strong></div>
-    <div><span class="muted">Localização</span><strong>{{ timesheet.project.location }}</strong></div>
-    <div><span class="muted">Aprovador</span><strong>{{ timesheet.project.approver_name }}</strong></div>
-    <div><span class="muted">Tarifa hora normal</span><strong>{{ timesheet.project.normal_hour_rate|floatformat:2 }} €/h</strong></div>
-    <div><span class="muted">Tarifa hora extra (inclui sábado)</span><strong>{{ timesheet.project.overtime_hour_rate|floatformat:2 }} €/h</strong></div>
-    <div><span class="muted">Tarifa de domingo</span><strong>{{ timesheet.project.sunday_hour_rate|floatformat:2 }} €/h</strong></div>
+    <div><span class="muted">{% trans "Cliente" %}</span><strong>{{ timesheet.client }}</strong></div>
+    <div><span class="muted">{% trans "Projeto" %}</span><strong>{{ timesheet.project.name }}</strong></div>
+    <div><span class="muted">{% trans "Localização" %}</span><strong>{{ timesheet.project.location }}</strong></div>
+    <div><span class="muted">{% trans "Aprovador" %}</span><strong>{{ timesheet.project.approver_name }}</strong></div>
+    <div><span class="muted">{% trans "Tarifa hora normal" %}</span><strong>{{ timesheet.project.normal_hour_rate|floatformat:2 }} €/h</strong></div>
+    <div><span class="muted">{% trans "Tarifa hora extra (inclui sábado)" %}</span><strong>{{ timesheet.project.overtime_hour_rate|floatformat:2 }} €/h</strong></div>
+    <div><span class="muted">{% trans "Tarifa de domingo" %}</span><strong>{{ timesheet.project.sunday_hour_rate|floatformat:2 }} €/h</strong></div>
   </div>
 </section>
 <section class="panel">
-  <h2>Registo diário</h2>
+  <h2>{% trans "Registo diário" %}</h2>
   <form method="post">{% csrf_token %}
     {{ formset.management_form }}
     {{ formset.non_form_errors }}
     <div class="table-wrap"><table class="hours-table">
-      <thead><tr><th>Dia</th><th>Início</th><th>Fim</th><th>Pausa (min)</th><th>Normais</th><th>Extras</th><th>Domingo</th><th>Total</th><th>Valor diário</th></tr></thead>
+      <thead><tr><th>{% trans "Dia" %}</th><th>{% trans "Início" %}</th><th>{% trans "Fim" %}</th><th>{% trans "Pausa (min)" %}</th><th>{% trans "Normais" %}</th><th>{% trans "Extras" %}</th><th>{% trans "Domingo" %}</th><th>{% trans "Total" %}</th><th>{% trans "Valor diário" %}</th></tr></thead>
       <tbody>{% for form in formset %}
         <tr>
           {{ form.id }}{{ form.entry_date }}
@@ -38,32 +39,32 @@
         </tr>
       {% endfor %}</tbody>
       <tfoot>
-        <tr><th colspan="4">Total semanal</th><th>{{ timesheet.normal_hours|floatformat:2 }} h</th><th>{{ timesheet.overtime_hours|floatformat:2 }} h</th><th>{{ timesheet.sunday_hours|floatformat:2 }} h</th><th>{{ timesheet.total_hours|floatformat:2 }} h</th><th>{{ timesheet.total_amount|floatformat:2 }} €</th></tr>
-        <tr><th colspan="4">Valor por categoria</th><th>{{ timesheet.normal_amount|floatformat:2 }} €</th><th>{{ timesheet.overtime_amount|floatformat:2 }} €</th><th>{{ timesheet.sunday_amount|floatformat:2 }} €</th><th colspan="2">Total: {{ timesheet.total_amount|floatformat:2 }} €</th></tr>
+        <tr><th colspan="4">{% trans "Total semanal" %}</th><th>{{ timesheet.normal_hours|floatformat:2 }} h</th><th>{{ timesheet.overtime_hours|floatformat:2 }} h</th><th>{{ timesheet.sunday_hours|floatformat:2 }} h</th><th>{{ timesheet.total_hours|floatformat:2 }} h</th><th>{{ timesheet.total_amount|floatformat:2 }} €</th></tr>
+        <tr><th colspan="4">{% trans "Valor por categoria" %}</th><th>{{ timesheet.normal_amount|floatformat:2 }} €</th><th>{{ timesheet.overtime_amount|floatformat:2 }} €</th><th>{{ timesheet.sunday_amount|floatformat:2 }} €</th><th colspan="2">{% trans "Total" %}: {{ timesheet.total_amount|floatformat:2 }} €</th></tr>
       </tfoot>
     </table></div>
-    <p class="help-text">As pausas são apenas informativas e não são descontadas ao total de horas. As horas de domingo são pagas apenas à tarifa de domingo; não acumulam com a tarifa de hora extra.</p>
-    {% if editable %}<div class="actions"><button class="button primary" type="submit">Guardar horas</button></div>{% endif %}
+    <p class="help-text">{% trans "As pausas são apenas informativas e não são descontadas ao total de horas. As horas de domingo são pagas apenas à tarifa de domingo; não acumulam com a tarifa de hora extra." %}</p>
+    {% if editable %}<div class="actions"><button class="button primary" type="submit">{% trans "Guardar horas" %}</button></div>{% endif %}
   </form>
   {% if editable %}
-  <form method="post" action="{% url 'timesheet_submit' timesheet.pk %}" class="submit-form">{% csrf_token %}<button class="button primary" type="submit">Submeter para aprovação</button></form>
+  <form method="post" action="{% url 'timesheet_submit' timesheet.pk %}" class="submit-form">{% csrf_token %}<button class="button primary" type="submit">{% trans "Submeter para aprovação" %}</button></form>
   {% endif %}
 </section>
 {% if can_review and timesheet.status == "submitted" %}
 <section class="panel">
-  <h2>Rever folha</h2>
+  <h2>{% trans "Rever folha" %}</h2>
   <form method="post" action="{% url 'timesheet_review' timesheet.pk %}">{% csrf_token %}
     {{ review_form.non_field_errors }}
-    <div class="field"><label for="{{ review_form.note.id_for_label }}">Nota <span class="muted">(obrigatória para devolução)</span></label>{{ review_form.note }}{{ review_form.note.errors }}</div>
+    <div class="field"><label for="{{ review_form.note.id_for_label }}">{% trans "Nota" %} <span class="muted">({% trans "obrigatória para devolução" %})</span></label>{{ review_form.note }}{{ review_form.note.errors }}</div>
     <div class="actions">
-      <button class="button primary" name="action" value="approve" type="submit">Aprovar</button>
-      <button class="button danger" name="action" value="return" type="submit">Devolver para correção</button>
+      <button class="button primary" name="action" value="approve" type="submit">{% trans "Aprovar" %}</button>
+      <button class="button danger" name="action" value="return" type="submit">{% trans "Devolver para correção" %}</button>
     </div>
   </form>
 </section>
 {% endif %}
 <section class="panel">
-  <h2>Histórico</h2>
-  {% if history %}<ol class="history">{% for item in history %}<li><strong>{{ item.get_status_display }}</strong> por {{ item.actor.get_full_name|default:item.actor.username }} · {{ item.created_at|date:"d/m/Y H:i" }}{% if item.note %}<p>{{ item.note }}</p>{% endif %}</li>{% endfor %}</ol>{% else %}<p class="muted">Sem alterações registadas.</p>{% endif %}
+  <h2>{% trans "Histórico" %}</h2>
+  {% if history %}<ol class="history">{% for item in history %}<li><strong>{{ item.get_status_display }}</strong> {% trans "por" %} {{ item.actor.get_full_name|default:item.actor.username }} · {{ item.created_at|date:"DATETIME_FORMAT" }}{% if item.note %}<p>{{ item.note }}</p>{% endif %}</li>{% endfor %}</ol>{% else %}<p class="muted">{% trans "Sem alterações registadas." %}</p>{% endif %}
 </section>
 {% endblock %}

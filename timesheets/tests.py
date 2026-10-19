@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import translation
 
 from .forms import TimesheetCreateForm
 from .models import Client, DayEntry, Project, Timesheet
@@ -239,6 +240,17 @@ class TimesheetWorkflowTests(TestCase):
         self.assertEqual(self.sheet.status, Timesheet.Status.RETURNED)
         self.assertEqual(self.sheet.history.latest("created_at").note, "Indique a tarefa realizada.")
 
+    def test_timesheet_status_and_details_follow_approver_language(self):
+        self.approver.language_preference.language = "en"
+        self.approver.language_preference.save(update_fields=["language"])
+        self.client.force_login(self.approver)
+        response = self.client.get(reverse("timesheet_detail", args=[self.sheet.pk]))
+        self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "en")
+        self.assertContains(response, "Submitted")
+        self.assertContains(response, "Regular hourly rate")
+        self.assertContains(response, "Daily entries")
+        self.assertContains(response, "Weekly total")
+
     def test_approver_cannot_return_sheet_without_note(self):
         self.client.force_login(self.approver)
         response = self.client.post(
@@ -287,3 +299,110 @@ class TimesheetWorkflowTests(TestCase):
         self.client.force_login(stranger)
         response = self.client.get(reverse("timesheet_detail", args=[self.sheet.pk]))
         self.assertEqual(response.status_code, 403)
+
+
+class LanguagePreferenceTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="language-user", password="safe-password", email="language@example.pt"
+        )
+
+    def test_new_user_defaults_to_portuguese(self):
+        self.assertEqual(self.user.language_preference.language, "pt-pt")
+
+    def test_authenticated_language_choice_is_saved_and_used_on_following_requests(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("set_language"),
+            {"language": "en", "next": reverse("dashboard")},
+        )
+        self.assertRedirects(response, reverse("dashboard"))
+        self.user.language_preference.refresh_from_db()
+        self.assertEqual(self.user.language_preference.language, "en")
+
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "en")
+        self.assertContains(response, "Weekly timesheets")
+        self.assertContains(response, "Language")
+
+    def test_language_preference_survives_a_new_session(self):
+        self.user.language_preference.language = "en"
+        self.user.language_preference.save(update_fields=["language"])
+        another_session = self.client_class()
+        another_session.force_login(self.user)
+        response = another_session.get(reverse("login"))
+        self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "en")
+        self.assertContains(response, "Log in")
+        self.assertContains(response, "Use the account created by the administrator.")
+
+    def test_anonymous_language_choice_is_kept_in_cookie(self):
+        response = self.client.post(
+            reverse("set_language"),
+            {"language": "en", "next": reverse("login")},
+        )
+        self.assertRedirects(response, reverse("login"))
+        response = self.client.get(reverse("login"))
+        self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "en")
+        self.assertContains(response, "Log in")
+
+    def test_invalid_language_is_rejected(self):
+        self.client.force_login(self.user)
+        self.client.post(reverse("set_language"), {"language": "fr", "next": "/"})
+        self.user.language_preference.refresh_from_db()
+        self.assertEqual(self.user.language_preference.language, "pt-pt")
+
+    def test_admin_uses_saved_language_and_shows_language_selector(self):
+        admin = get_user_model().objects.create_superuser(
+            username="admin-language", password="safe-password", email="admin@example.pt"
+        )
+        admin.language_preference.language = "en"
+        admin.language_preference.save(update_fields=["language"])
+        self.client.force_login(admin)
+        response = self.client.get(reverse("admin:index"))
+        self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "en")
+        self.assertContains(response, "Language")
+        self.assertContains(response, "Apply")
+        self.assertContains(response, "Site administration")
+
+    def test_admin_login_is_localized_in_portuguese_and_has_language_selector(self):
+        response = self.client.get(reverse("admin:login"))
+        self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "pt-pt")
+        self.assertContains(response, "Utilizador:")
+        self.assertContains(response, "Palavra-passe:")
+        self.assertContains(response, "Entrar")
+        self.assertContains(response, "Idioma")
+        self.assertContains(response, "Aplicar")
+        admin = get_user_model().objects.create_superuser(
+            username="admin-portugues", password="safe-password", email="admin-pt@example.pt"
+        )
+        self.client.force_login(admin)
+        response = self.client.get(reverse("admin:index"))
+        self.assertContains(response, "Administração do site")
+
+    def test_model_validation_error_is_translated(self):
+        client_record = Client.objects.create(
+            company_name="Language client",
+            address="Address",
+            tax_number="509999999",
+            contact_name="Contact",
+            email="language-client@example.pt",
+        )
+        project = Project.objects.create(
+            client=client_record,
+            name="Language project",
+            location="Location",
+            approver_name="Approver",
+            approver_email="approver@example.pt",
+        )
+        with translation.override("en"):
+            with self.assertRaises(ValidationError) as error:
+                Timesheet(
+                    employee=self.user,
+                    week_start=date(2026, 10, 20),
+                    client=client_record,
+                    project=project,
+                ).full_clean()
+        self.assertIn(
+            "The week must start on a Monday.",
+            error.exception.message_dict["week_start"],
+        )

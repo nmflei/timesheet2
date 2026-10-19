@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 <section class="panel narrow">
@@ -6,7 +7,7 @@
   <form method="post">{% csrf_token %}
     {{ form.non_field_errors }}
     {% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
-    <div class="actions"><button class="button primary" type="submit">Guardar</button><a class="button secondary" href="javascript:history.back()">Cancelar</a></div>
+    <div class="actions"><button class="button primary" type="submit">{% trans "Guardar" %}</button><a class="button secondary" href="javascript:history.back()">{% trans "Cancelar" %}</a></div>
   </form>
 </section>
 {% endblock %}

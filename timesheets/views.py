@@ -1,11 +1,15 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
-from django.http import JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import translation
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from .forms import (
@@ -28,6 +32,43 @@ def can_review(user, timesheet):
         and user.email
         and user.email.casefold() == timesheet.project.approver_email.casefold()
     )
+
+
+@require_POST
+def set_language_preference(request):
+    language = request.POST.get("language")
+    available_languages = dict(settings.LANGUAGES)
+    if language not in available_languages:
+        messages.error(request, _("Selecione um idioma válido."))
+        return redirect("dashboard" if request.user.is_authenticated else "login")
+
+    if request.user.is_authenticated:
+        preference = request.user.language_preference
+        preference.language = language
+        preference.save(update_fields=["language"])
+
+    translation.activate(language)
+    request.LANGUAGE_CODE = language
+    response = HttpResponseRedirect(
+        request.POST.get("next")
+        if url_has_allowed_host_and_scheme(
+            request.POST.get("next", ""),
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        )
+        else "/"
+    )
+    response.set_cookie(
+        settings.LANGUAGE_COOKIE_NAME,
+        language,
+        max_age=settings.LANGUAGE_COOKIE_AGE,
+        path=settings.LANGUAGE_COOKIE_PATH,
+        domain=settings.LANGUAGE_COOKIE_DOMAIN,
+        secure=settings.LANGUAGE_COOKIE_SECURE,
+        httponly=settings.LANGUAGE_COOKIE_HTTPONLY,
+        samesite=settings.LANGUAGE_COOKIE_SAMESITE,
+    )
+    return response
 
 
 @login_required
@@ -65,7 +106,7 @@ def timesheet_create(request):
                         timesheet=sheet, actor=request.user, status=sheet.status
                     )
             except IntegrityError:
-                form.add_error(None, "Já existe uma folha para este projeto e semana.")
+                form.add_error(None, _("Já existe uma folha para este projeto e semana."))
             else:
                 return redirect("timesheet_detail", pk=sheet.pk)
     else:
@@ -96,9 +137,9 @@ def timesheet_detail(request, pk):
         if formset.is_valid():
             with transaction.atomic():
                 formset.save()
-            messages.success(request, "Folha de horas guardada.")
+            messages.success(request, _("Folha de horas guardada."))
             return redirect("timesheet_detail", pk=sheet.pk)
-        messages.error(request, "Verifique os dados dos registos diários.")
+        messages.error(request, _("Verifique os dados dos registos diários."))
     review_form = ReviewForm()
     return render(
         request,
@@ -121,7 +162,7 @@ def timesheet_submit(request, pk):
     if sheet.status not in {Timesheet.Status.DRAFT, Timesheet.Status.RETURNED}:
         raise PermissionDenied
     if not sheet.entries.filter(start_time__isnull=False, end_time__isnull=False).exists():
-        messages.error(request, "Registe pelo menos um dia antes de submeter a folha.")
+        messages.error(request, _("Registe pelo menos um dia antes de submeter a folha."))
         return redirect("timesheet_detail", pk=pk)
     with transaction.atomic():
         sheet.status = Timesheet.Status.SUBMITTED
@@ -129,7 +170,7 @@ def timesheet_submit(request, pk):
         TimesheetHistory.objects.create(
             timesheet=sheet, actor=request.user, status=sheet.status
         )
-    messages.success(request, "Folha submetida para aprovação.")
+    messages.success(request, _("Folha submetida para aprovação."))
     return redirect("timesheet_detail", pk=pk)
 
 
@@ -150,11 +191,11 @@ def timesheet_review(request, pk):
     if not can_review(request.user, sheet):
         raise PermissionDenied
     if sheet.status != Timesheet.Status.SUBMITTED:
-        messages.error(request, "Esta folha já não aguarda aprovação.")
+        messages.error(request, _("Esta folha já não aguarda aprovação."))
         return redirect("timesheet_detail", pk=pk)
     form = ReviewForm(request.POST)
     if not form.is_valid():
-        messages.error(request, "Para devolver uma folha, indique o motivo.")
+        messages.error(request, _("Para devolver uma folha, indique o motivo."))
         return redirect("timesheet_detail", pk=pk)
     status = (
         Timesheet.Status.APPROVED
@@ -170,7 +211,7 @@ def timesheet_review(request, pk):
             status=status,
             note=form.cleaned_data["note"].strip(),
         )
-    messages.success(request, "Decisão registada.")
+    messages.success(request, _("Decisão registada."))
     return redirect("timesheet_detail", pk=pk)
 
 
@@ -179,22 +220,22 @@ def client_list(request):
     if not is_manager(request.user):
         raise PermissionDenied
     return render(request, "timesheets/management_list.html", {
-        "title": "Clientes",
+        "title": _("Clientes"),
         "objects": Client.objects.all(),
         "create_url": "client_create",
         "edit_url": "client_edit",
-        "object_label": "cliente",
+        "object_label": _("cliente"),
     })
 
 
 @login_required
 def client_create(request):
-    return manage_object(request, ClientForm, "timesheets/object_form.html", "Novo cliente", "client_list")
+    return manage_object(request, ClientForm, "timesheets/object_form.html", _("Novo cliente"), "client_list")
 
 
 @login_required
 def client_edit(request, pk):
-    return manage_object(request, ClientForm, "timesheets/object_form.html", "Editar cliente", "client_list", Client, pk)
+    return manage_object(request, ClientForm, "timesheets/object_form.html", _("Editar cliente"), "client_list", Client, pk)
 
 
 @login_required
@@ -202,22 +243,22 @@ def project_list(request):
     if not is_manager(request.user):
         raise PermissionDenied
     return render(request, "timesheets/management_list.html", {
-        "title": "Projetos",
+        "title": _("Projetos"),
         "objects": Project.objects.select_related("client"),
         "create_url": "project_create",
         "edit_url": "project_edit",
-        "object_label": "projeto",
+        "object_label": _("projeto"),
     })
 
 
 @login_required
 def project_create(request):
-    return manage_object(request, ProjectForm, "timesheets/object_form.html", "Novo projeto", "project_list")
+    return manage_object(request, ProjectForm, "timesheets/object_form.html", _("Novo projeto"), "project_list")
 
 
 @login_required
 def project_edit(request, pk):
-    return manage_object(request, ProjectForm, "timesheets/object_form.html", "Editar projeto", "project_list", Project, pk)
+    return manage_object(request, ProjectForm, "timesheets/object_form.html", _("Editar projeto"), "project_list", Project, pk)
 
 
 def manage_object(request, form_class, template, title, success_url, model=None, pk=None):
@@ -227,6 +268,6 @@ def manage_object(request, form_class, template, title, success_url, model=None,
     form = form_class(request.POST or None, instance=instance)
     if request.method == "POST" and form.is_valid():
         form.save()
-        messages.success(request, f"{title} guardado.")
+        messages.success(request, _("%(title)s guardado.") % {"title": title})
         return redirect(success_url)
     return render(request, template, {"form": form, "title": title})

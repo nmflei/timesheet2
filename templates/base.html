@@ -1,33 +1,43 @@
-{% load static %}
+{% load i18n static %}
 <!doctype html>
-<html lang="pt-PT">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Folhas de horas{% endblock %} · Horas</title>
+  <title>{% block title %}{% trans "Folhas de horas" %}{% endblock %} · {% trans "Folhas de horas" %}</title>
   <link rel="stylesheet" href="{% static 'timesheets/style.css' %}">
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="{% url 'dashboard' %}">Folhas de horas</a>
+    <a class="brand" href="{% url 'dashboard' %}">{% trans "Folhas de horas" %}</a>
     {% if user.is_authenticated %}
-    <nav aria-label="Navegação principal">
-      <a href="{% url 'dashboard' %}">Folhas</a>
-      <a href="{% url 'approval_list' %}">Aprovações</a>
+    <nav aria-label="{% trans 'Navegação principal' %}">
+      <a href="{% url 'dashboard' %}">{% trans "Folhas" %}</a>
+      <a href="{% url 'approval_list' %}">{% trans "Aprovações" %}</a>
       {% if user.is_staff %}
-      <a href="{% url 'client_list' %}">Clientes</a>
-      <a href="{% url 'project_list' %}">Projetos</a>
-      <a href="/admin/">Contas de utilizador</a>
+      <a href="{% url 'client_list' %}">{% trans "Clientes" %}</a>
+      <a href="{% url 'project_list' %}">{% trans "Projetos" %}</a>
+      <a href="/admin/">{% trans "Contas de utilizador" %}</a>
       {% endif %}
       <span class="nav-user">{{ user.get_full_name|default:user.username }}</span>
-      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="link-button" type="submit">Sair</button></form>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="link-button" type="submit">{% trans "Sair" %}</button></form>
     </nav>
     {% endif %}
+    <form method="post" action="{% url 'set_language' %}" class="language-form">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <label for="language-select">{% trans "Idioma" %}</label>
+      <select id="language-select" name="language" onchange="this.form.submit()">
+        <option value="pt-pt" {% if LANGUAGE_CODE == "pt-pt" %}selected{% endif %}>Português</option>
+        <option value="en" {% if LANGUAGE_CODE == "en" %}selected{% endif %}>English</option>
+      </select>
+      <button class="language-submit" type="submit">{% trans "Aplicar" %}</button>
+    </form>
   </header>
   <main class="container">
     {% for message in messages %}<div class="message {{ message.tags }}">{{ message }}</div>{% endfor %}
     {% block content %}{% endblock %}
   </main>
-  <footer>Folhas de horas semanais</footer>
+  <footer>{% trans "Folhas de horas semanais" %}</footer>
 </body>
 </html>

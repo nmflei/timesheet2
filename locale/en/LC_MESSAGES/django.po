@@ -1,0 +1,435 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Folhas de horas"
+msgstr "Timesheets"
+
+msgid "Folhas de horas semanais"
+msgstr "Weekly timesheets"
+
+msgid "Navegação principal"
+msgstr "Main navigation"
+
+msgid "Folhas"
+msgstr "Timesheets"
+
+msgid "Aprovações"
+msgstr "Approvals"
+
+msgid "Clientes"
+msgstr "Clients"
+
+msgid "Projetos"
+msgstr "Projects"
+
+msgid "Contas de utilizador"
+msgstr "User accounts"
+
+msgid "Sair"
+msgstr "Log out"
+
+msgid "Idioma"
+msgstr "Language"
+
+msgid "Aplicar"
+msgstr "Apply"
+
+msgid "Entrar"
+msgstr "Log in"
+
+msgid "Utilize a conta criada pelo administrador."
+msgstr "Use the account created by the administrator."
+
+msgid "Folhas semanais"
+msgstr "Weekly timesheets"
+
+msgid "Consulta de todas as folhas registadas."
+msgstr "View all recorded timesheets."
+
+msgid "Registe e acompanhe as suas horas por projeto."
+msgstr "Record and track your hours by project."
+
+msgid "Criar folha"
+msgstr "Create timesheet"
+
+msgid "Colaborador"
+msgstr "Employee"
+
+msgid "Semana"
+msgstr "Week"
+
+msgid "Cliente / projeto"
+msgstr "Client / project"
+
+msgid "Horas"
+msgstr "Hours"
+
+msgid "Valor"
+msgstr "Amount"
+
+msgid "Estado"
+msgstr "Status"
+
+msgid "Ainda não existem folhas de horas."
+msgstr "There are no timesheets yet."
+
+msgid "Nova folha"
+msgstr "New timesheet"
+
+msgid "Nova folha semanal"
+msgstr "New weekly timesheet"
+
+msgid "Crie uma folha por semana, cliente e projeto. Para outro projeto, crie uma folha separada."
+msgstr "Create one timesheet per week, client and project. Create a separate timesheet for each additional project."
+
+msgid "Cancelar"
+msgstr "Cancel"
+
+msgid "Não foi possível carregar os projetos."
+msgstr "Could not load projects."
+
+msgid "Folhas para aprovação"
+msgstr "Timesheets awaiting approval"
+
+msgid "Total de horas"
+msgstr "Total hours"
+
+msgid "Rever"
+msgstr "Review"
+
+msgid "Não existem folhas pendentes de aprovação."
+msgstr "There are no timesheets awaiting approval."
+
+msgid "Adicionar"
+msgstr "Add"
+
+msgid "Nome"
+msgstr "Name"
+
+msgid "Detalhes"
+msgstr "Details"
+
+msgid "NIF"
+msgstr "Tax number"
+
+msgid "email"
+msgstr "Email"
+
+msgid "Aprovação"
+msgstr "Approver"
+
+msgid "Hora normal"
+msgstr "Regular hour"
+
+msgid "Hora extra"
+msgstr "Overtime hour"
+
+msgid "Domingo"
+msgstr "Sunday"
+
+msgid "Editar"
+msgstr "Edit"
+
+msgid "Ainda não existem registos."
+msgstr "There are no records yet."
+
+msgid "Guardar"
+msgstr "Save"
+
+msgid "Folha semanal"
+msgstr "Weekly timesheet"
+
+msgid "Semana de"
+msgstr "Week of"
+
+msgid "Cliente"
+msgstr "Client"
+
+msgid "Projeto"
+msgstr "Project"
+
+msgid "Localização"
+msgstr "Location"
+
+msgid "Aprovador"
+msgstr "Approver"
+
+msgid "Tarifa hora normal"
+msgstr "Regular hourly rate"
+
+msgid "Tarifa hora extra (inclui sábado)"
+msgstr "Overtime rate (includes Saturday)"
+
+msgid "Tarifa de domingo"
+msgstr "Sunday hourly rate"
+
+msgid "Registo diário"
+msgstr "Daily entries"
+
+msgid "Dia"
+msgstr "Day"
+
+msgid "Início"
+msgstr "Start"
+
+msgid "Fim"
+msgstr "End"
+
+msgid "Pausa (min)"
+msgstr "Break (min)"
+
+msgid "Normais"
+msgstr "Regular"
+
+msgid "Extras"
+msgstr "Overtime"
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Valor diário"
+msgstr "Daily amount"
+
+msgid "Total semanal"
+msgstr "Weekly total"
+
+msgid "Valor por categoria"
+msgstr "Amount by category"
+
+msgid "As pausas são apenas informativas e não são descontadas ao total de horas. As horas de domingo são pagas apenas à tarifa de domingo; não acumulam com a tarifa de hora extra."
+msgstr "Breaks are recorded for information only and are not deducted from the total hours. Sunday hours are paid at the Sunday rate only and do not also count as overtime."
+
+msgid "Guardar horas"
+msgstr "Save hours"
+
+msgid "Submeter para aprovação"
+msgstr "Submit for approval"
+
+msgid "Rever folha"
+msgstr "Review timesheet"
+
+msgid "Nota"
+msgstr "Note"
+
+msgid "obrigatória para devolução"
+msgstr "required when returning a timesheet"
+
+msgid "Aprovar"
+msgstr "Approve"
+
+msgid "Devolver para correção"
+msgstr "Return for corrections"
+
+msgid "Histórico"
+msgstr "History"
+
+msgid "por"
+msgstr "by"
+
+msgid "Sem alterações registadas."
+msgstr "No changes recorded."
+
+msgid "nome da empresa"
+msgstr "Company name"
+
+msgid "morada completa"
+msgstr "Full address"
+
+msgid "nome do contacto"
+msgstr "Contact name"
+
+msgid "criado em"
+msgstr "Created at"
+
+msgid "cliente"
+msgstr "Client"
+
+msgid "clientes"
+msgstr "Clients"
+
+msgid "nome do projeto"
+msgstr "Project name"
+
+msgid "localização"
+msgstr "Location"
+
+msgid "responsável pela aprovação"
+msgstr "Approver name"
+
+msgid "email do responsável"
+msgstr "Approver email"
+
+msgid "preço por hora normal (€)"
+msgstr "Regular hourly rate (€)"
+
+msgid "preço por hora extra (€)"
+msgstr "Overtime hourly rate (€)"
+
+msgid "preço por hora ao domingo (€)"
+msgstr "Sunday hourly rate (€)"
+
+msgid "projeto"
+msgstr "Project"
+
+msgid "projetos"
+msgstr "Projects"
+
+msgid "Rascunho"
+msgstr "Draft"
+
+msgid "Submetida"
+msgstr "Submitted"
+
+msgid "Aprovada"
+msgstr "Approved"
+
+msgid "Devolvida"
+msgstr "Returned"
+
+msgid "colaborador"
+msgstr "Employee"
+
+msgid "segunda-feira da semana"
+msgstr "Monday of the week"
+
+msgid "estado"
+msgstr "Status"
+
+msgid "criada em"
+msgstr "Created at"
+
+msgid "atualizada em"
+msgstr "Updated at"
+
+msgid "folha de horas"
+msgstr "Timesheet"
+
+msgid "folhas de horas"
+msgstr "Timesheets"
+
+msgid "folha"
+msgstr "Timesheet"
+
+msgid "dia"
+msgstr "Day"
+
+msgid "início"
+msgstr "Start"
+
+msgid "fim"
+msgstr "End"
+
+msgid "pausa (minutos)"
+msgstr "Break (minutes)"
+
+msgid "registo diário"
+msgstr "Daily entry"
+
+msgid "registos diários"
+msgstr "Daily entries"
+
+msgid "utilizador"
+msgstr "User"
+
+msgid "nota"
+msgstr "Note"
+
+msgid "data"
+msgstr "Date"
+
+msgid "registo de estado"
+msgstr "Status history entry"
+
+msgid "histórico de estados"
+msgstr "Status history"
+
+msgid "idioma"
+msgstr "Language"
+
+msgid "preferência de idioma"
+msgstr "Language preference"
+
+msgid "preferências de idioma"
+msgstr "Language preferences"
+
+msgid "Português (Portugal)"
+msgstr "Portuguese (Portugal)"
+
+msgid "English"
+msgstr "English"
+
+msgid "A semana tem de começar à segunda-feira."
+msgstr "The week must start on a Monday."
+
+msgid "O projeto selecionado não pertence ao cliente escolhido."
+msgstr "The selected project does not belong to the selected client."
+
+msgid "O dia tem de pertencer à semana da folha."
+msgstr "The date must belong to the timesheet week."
+
+msgid "Indique a hora de início e de fim."
+msgstr "Enter both the start and end times."
+
+msgid "Registe primeiro o início e o fim do dia."
+msgstr "Enter the start and end times before recording a break."
+
+msgid "A hora de fim tem de ser posterior ao início."
+msgstr "The end time must be later than the start time."
+
+msgid "A pausa não pode exceder o intervalo registado."
+msgstr "The break cannot exceed the recorded time interval."
+
+msgid "Selecione um projeto do cliente escolhido."
+msgstr "Select a project belonging to the selected client."
+
+msgid "Nota para o colaborador"
+msgstr "Note for the employee"
+
+msgid "Indique o motivo da devolução."
+msgstr "Enter a reason for returning the timesheet."
+
+msgid "Selecione um idioma válido."
+msgstr "Select a valid language."
+
+msgid "Já existe uma folha para este projeto e semana."
+msgstr "A timesheet already exists for this project and week."
+
+msgid "Folha de horas guardada."
+msgstr "Timesheet saved."
+
+msgid "Verifique os dados dos registos diários."
+msgstr "Check the daily entry details."
+
+msgid "Registe pelo menos um dia antes de submeter a folha."
+msgstr "Record at least one day before submitting the timesheet."
+
+msgid "Folha submetida para aprovação."
+msgstr "Timesheet submitted for approval."
+
+msgid "Esta folha já não aguarda aprovação."
+msgstr "This timesheet is no longer awaiting approval."
+
+msgid "Para devolver uma folha, indique o motivo."
+msgstr "Enter a reason to return the timesheet."
+
+msgid "Decisão registada."
+msgstr "Decision recorded."
+
+msgid "Novo cliente"
+msgstr "New client"
+
+msgid "Editar cliente"
+msgstr "Edit client"
+
+msgid "Novo projeto"
+msgstr "New project"
+
+msgid "Editar projeto"
+msgstr "Edit project"
+
+msgid "%(title)s guardado."
+msgstr "%(title)s saved."

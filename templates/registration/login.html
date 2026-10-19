@@ -1,13 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Entrar{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Entrar" %}{% endblock %}
 {% block content %}
 <section class="panel narrow">
-  <h1>Entrar</h1>
-  <p class="muted">Utilize a conta criada pelo administrador.</p>
+  <h1>{% trans "Entrar" %}</h1>
+  <p class="muted">{% trans "Utilize a conta criada pelo administrador." %}</p>
   <form method="post">{% csrf_token %}
     {{ form.non_field_errors }}
     {% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
-    <button class="button primary" type="submit">Entrar</button>
+    <button class="button primary" type="submit">{% trans "Entrar" %}</button>
   </form>
 </section>
 {% endblock %}

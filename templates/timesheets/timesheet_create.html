@@ -1,13 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Nova folha{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Nova folha" %}{% endblock %}
 {% block content %}
 <section class="panel narrow">
-  <h1>Nova folha semanal</h1>
-  <p class="muted">Crie uma folha por semana, cliente e projeto. Para outro projeto, crie uma folha separada.</p>
+  <h1>{% trans "Nova folha semanal" %}</h1>
+  <p class="muted">{% trans "Crie uma folha por semana, cliente e projeto. Para outro projeto, crie uma folha separada." %}</p>
   <form method="post">{% csrf_token %}
     {{ form.non_field_errors }}
     {% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
-    <div class="actions"><button class="button primary" type="submit">Criar folha</button><a class="button secondary" href="{% url 'dashboard' %}">Cancelar</a></div>
+    <div class="actions"><button class="button primary" type="submit">{% trans "Criar folha" %}</button><a class="button secondary" href="{% url 'dashboard' %}">{% trans "Cancelar" %}</a></div>
   </form>
 </section>
 <script>
@@ -17,7 +18,7 @@
     projectSelect.replaceChildren(new Option("---------", ""));
     if (!clientSelect.value) return;
     const response = await fetch(`/api/clientes/${clientSelect.value}/projetos/`);
-    if (!response.ok) throw new Error("Não foi possível carregar os projetos.");
+    if (!response.ok) throw new Error("{% trans 'Não foi possível carregar os projetos.' %}");
     for (const project of await response.json()) projectSelect.add(new Option(project.name, project.id));
   }
   clientSelect.addEventListener("change", updateProjects);
