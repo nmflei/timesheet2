@@ -1,0 +1,183 @@
+from datetime import timedelta
+from decimal import Decimal
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import models
+
+
+class Client(models.Model):
+    company_name = models.CharField("nome da empresa", max_length=180)
+    address = models.TextField("morada completa")
+    tax_number = models.CharField("NIF", max_length=20, unique=True)
+    contact_name = models.CharField("nome do contacto", max_length=160)
+    email = models.EmailField("email")
+    created_at = models.DateTimeField("criado em", auto_now_add=True)
+
+    class Meta:
+        ordering = ["company_name"]
+        verbose_name = "cliente"
+        verbose_name_plural = "clientes"
+
+    def __str__(self):
+        return self.company_name
+
+
+class Project(models.Model):
+    client = models.ForeignKey(
+        Client, on_delete=models.PROTECT, related_name="projects", verbose_name="cliente"
+    )
+    name = models.CharField("nome do projeto", max_length=180)
+    location = models.CharField("localização", max_length=240)
+    approver_name = models.CharField("responsável pela aprovação", max_length=160)
+    approver_email = models.EmailField("email do responsável")
+    created_at = models.DateTimeField("criado em", auto_now_add=True)
+
+    class Meta:
+        ordering = ["client__company_name", "name"]
+        verbose_name = "projeto"
+        verbose_name_plural = "projetos"
+        constraints = [
+            models.UniqueConstraint(fields=["client", "name"], name="unique_project_name_per_client")
+        ]
+
+    def __str__(self):
+        return f"{self.client} — {self.name}"
+
+
+class Timesheet(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Rascunho"
+        SUBMITTED = "submitted", "Submetida"
+        APPROVED = "approved", "Aprovada"
+        RETURNED = "returned", "Devolvida"
+
+    employee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="timesheets",
+        verbose_name="colaborador",
+    )
+    week_start = models.DateField("segunda-feira da semana")
+    client = models.ForeignKey(Client, on_delete=models.PROTECT, verbose_name="cliente")
+    project = models.ForeignKey(Project, on_delete=models.PROTECT, verbose_name="projeto")
+    status = models.CharField(
+        "estado", max_length=12, choices=Status.choices, default=Status.DRAFT
+    )
+    created_at = models.DateTimeField("criada em", auto_now_add=True)
+    updated_at = models.DateTimeField("atualizada em", auto_now=True)
+
+    class Meta:
+        ordering = ["-week_start", "-created_at"]
+        verbose_name = "folha de horas"
+        verbose_name_plural = "folhas de horas"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["employee", "week_start", "client", "project"],
+                name="unique_employee_week_client_project",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.employee} — semana de {self.week_start:%d/%m/%Y} — {self.project.name}"
+
+    def clean(self):
+        errors = {}
+        if self.week_start and self.week_start.weekday() != 0:
+            errors["week_start"] = "A semana tem de começar à segunda-feira."
+        if self.project_id and self.client_id and self.project.client_id != self.client_id:
+            errors["project"] = "O projeto selecionado não pertence ao cliente escolhido."
+        if errors:
+            raise ValidationError(errors)
+
+    @property
+    def normal_hours(self):
+        return sum((entry.normal_hours for entry in self.entries.all()), Decimal("0"))
+
+    @property
+    def overtime_hours(self):
+        return sum((entry.overtime_hours for entry in self.entries.all()), Decimal("0"))
+
+    @property
+    def total_hours(self):
+        return self.normal_hours + self.overtime_hours
+
+
+class DayEntry(models.Model):
+    timesheet = models.ForeignKey(
+        Timesheet, on_delete=models.CASCADE, related_name="entries", verbose_name="folha"
+    )
+    entry_date = models.DateField("dia")
+    start_time = models.TimeField("início", null=True, blank=True)
+    end_time = models.TimeField("fim", null=True, blank=True)
+    break_minutes = models.PositiveSmallIntegerField("pausa (minutos)", default=0)
+
+    class Meta:
+        ordering = ["entry_date"]
+        verbose_name = "registo diário"
+        verbose_name_plural = "registos diários"
+        constraints = [
+            models.UniqueConstraint(fields=["timesheet", "entry_date"], name="unique_entry_per_day")
+        ]
+
+    def __str__(self):
+        return f"{self.entry_date:%A %d/%m} — {self.timesheet}"
+
+    def clean(self):
+        if not self.timesheet_id or not self.entry_date:
+            return
+        monday = self.timesheet.week_start
+        if not monday <= self.entry_date <= monday + timedelta(days=6):
+            raise ValidationError({"entry_date": "O dia tem de pertencer à semana da folha."})
+        if (self.start_time is None) != (self.end_time is None):
+            raise ValidationError("Indique a hora de início e de fim.")
+        if self.start_time is None and self.break_minutes:
+            raise ValidationError({"break_minutes": "Registe primeiro o início e o fim do dia."})
+        if self.start_time and self.end_time and self.end_time <= self.start_time:
+            raise ValidationError({"end_time": "A hora de fim tem de ser posterior ao início."})
+        if self.start_time and self.end_time and self.break_minutes > self.elapsed_minutes:
+            raise ValidationError({"break_minutes": "A pausa não pode exceder o intervalo registado."})
+
+    @property
+    def elapsed_minutes(self):
+        if not self.start_time or not self.end_time:
+            return 0
+        start = self.start_time.hour * 60 + self.start_time.minute
+        end = self.end_time.hour * 60 + self.end_time.minute
+        return end - start
+
+    @property
+    def total_hours(self):
+        return Decimal(self.elapsed_minutes) / Decimal(60)
+
+    @property
+    def normal_hours(self):
+        if self.entry_date.weekday() >= 5:
+            return Decimal("0")
+        return min(self.total_hours, Decimal("8"))
+
+    @property
+    def overtime_hours(self):
+        if self.entry_date.weekday() >= 5:
+            return self.total_hours
+        return max(self.total_hours - Decimal("8"), Decimal("0"))
+
+
+class TimesheetHistory(models.Model):
+    timesheet = models.ForeignKey(
+        Timesheet, on_delete=models.CASCADE, related_name="history", verbose_name="folha"
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name="utilizador"
+    )
+    status = models.CharField("estado", max_length=12, choices=Timesheet.Status.choices)
+    note = models.TextField("nota", blank=True)
+    created_at = models.DateTimeField("data", auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        verbose_name = "registo de estado"
+        verbose_name_plural = "histórico de estados"
+
+    def __str__(self):
+        return f"{self.get_status_display()} — {self.created_at:%d/%m/%Y %H:%M}"

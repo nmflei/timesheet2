@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Folhas semanais{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><h1>Folhas semanais</h1><p class="muted">{% if user.is_staff %}Consulta de todas as folhas registadas.{% else %}Registe e acompanhe as suas horas por projeto.{% endif %}</p></div>
+  {% if not user.is_staff %}<a class="button primary" href="{% url 'timesheet_create' %}">Criar folha</a>{% endif %}
+</div>
+<section class="panel">
+  {% if timesheets %}
+  <div class="table-wrap"><table>
+    <thead><tr>{% if user.is_staff %}<th>Colaborador</th>{% endif %}<th>Semana</th><th>Cliente / projeto</th><th>Horas</th><th>Estado</th></tr></thead>
+    <tbody>{% for sheet in timesheets %}<tr>
+      {% if user.is_staff %}<td>{{ sheet.employee.get_full_name|default:sheet.employee.username }}</td>{% endif %}
+      <td><a href="{% url 'timesheet_detail' sheet.pk %}">{{ sheet.week_start|date:"d/m/Y" }}</a></td>
+      <td>{{ sheet.client }}<br><span class="muted">{{ sheet.project.name }}</span></td>
+      <td>{{ sheet.total_hours|floatformat:2 }} h</td>
+      <td><span class="status status-{{ sheet.status }}">{{ sheet.get_status_display }}</span></td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="empty">Ainda não existem folhas de horas.</p>{% endif %}
+</section>
+{% endblock %}

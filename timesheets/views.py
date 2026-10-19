@@ -1,0 +1,232 @@
+from datetime import timedelta
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.db import IntegrityError, transaction
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from .forms import (
+    ClientForm,
+    DayEntryFormSet,
+    ProjectForm,
+    ReviewForm,
+    TimesheetCreateForm,
+)
+from .models import Client, DayEntry, Project, Timesheet, TimesheetHistory
+
+
+def is_manager(user):
+    return user.is_staff or user.is_superuser
+
+
+def can_review(user, timesheet):
+    return is_manager(user) or (
+        user.is_authenticated
+        and user.email
+        and user.email.casefold() == timesheet.project.approver_email.casefold()
+    )
+
+
+@login_required
+def dashboard(request):
+    sheets = Timesheet.objects.select_related("client", "project", "employee").prefetch_related(
+        "entries"
+    )
+    if not is_manager(request.user):
+        sheets = sheets.filter(employee=request.user)
+    return render(request, "timesheets/dashboard.html", {"timesheets": sheets})
+
+
+@login_required
+def projects_for_client(request, client_id):
+    projects = Project.objects.filter(client_id=client_id).order_by("name")
+    return JsonResponse([{"id": project.id, "name": project.name} for project in projects], safe=False)
+
+
+@login_required
+def timesheet_create(request):
+    if request.method == "POST":
+        form = TimesheetCreateForm(request.POST)
+        if form.is_valid():
+            sheet = form.save(commit=False)
+            sheet.employee = request.user
+            try:
+                with transaction.atomic():
+                    sheet.full_clean(validate_constraints=False)
+                    sheet.save()
+                    for day in range(7):
+                        DayEntry.objects.create(
+                            timesheet=sheet, entry_date=sheet.week_start + timedelta(days=day)
+                        )
+                    TimesheetHistory.objects.create(
+                        timesheet=sheet, actor=request.user, status=sheet.status
+                    )
+            except IntegrityError:
+                form.add_error(None, "Já existe uma folha para este projeto e semana.")
+            else:
+                return redirect("timesheet_detail", pk=sheet.pk)
+    else:
+        form = TimesheetCreateForm()
+    return render(request, "timesheets/timesheet_create.html", {"form": form})
+
+
+@login_required
+def timesheet_detail(request, pk):
+    sheet = get_object_or_404(
+        Timesheet.objects.select_related("client", "project", "employee"), pk=pk
+    )
+    if sheet.employee_id != request.user.id and not is_manager(request.user) and not can_review(request.user, sheet):
+        raise PermissionDenied
+
+    editable = sheet.employee_id == request.user.id and sheet.status in {
+        Timesheet.Status.DRAFT,
+        Timesheet.Status.RETURNED,
+    }
+    formset = DayEntryFormSet(
+        request.POST or None,
+        queryset=sheet.entries.all(),
+        prefix="days",
+    )
+    if request.method == "POST":
+        if not editable:
+            raise PermissionDenied
+        if formset.is_valid():
+            with transaction.atomic():
+                formset.save()
+            messages.success(request, "Folha de horas guardada.")
+            return redirect("timesheet_detail", pk=sheet.pk)
+        messages.error(request, "Verifique os dados dos registos diários.")
+    review_form = ReviewForm()
+    return render(
+        request,
+        "timesheets/timesheet_detail.html",
+        {
+            "timesheet": sheet,
+            "formset": formset,
+            "editable": editable,
+            "review_form": review_form,
+            "can_review": can_review(request.user, sheet),
+            "history": sheet.history.select_related("actor"),
+        },
+    )
+
+
+@login_required
+@require_POST
+def timesheet_submit(request, pk):
+    sheet = get_object_or_404(Timesheet, pk=pk, employee=request.user)
+    if sheet.status not in {Timesheet.Status.DRAFT, Timesheet.Status.RETURNED}:
+        raise PermissionDenied
+    if not sheet.entries.filter(start_time__isnull=False, end_time__isnull=False).exists():
+        messages.error(request, "Registe pelo menos um dia antes de submeter a folha.")
+        return redirect("timesheet_detail", pk=pk)
+    with transaction.atomic():
+        sheet.status = Timesheet.Status.SUBMITTED
+        sheet.save(update_fields=["status", "updated_at"])
+        TimesheetHistory.objects.create(
+            timesheet=sheet, actor=request.user, status=sheet.status
+        )
+    messages.success(request, "Folha submetida para aprovação.")
+    return redirect("timesheet_detail", pk=pk)
+
+
+@login_required
+def approval_list(request):
+    sheets = Timesheet.objects.filter(status=Timesheet.Status.SUBMITTED).select_related(
+        "employee", "client", "project"
+    ).prefetch_related("entries")
+    if not is_manager(request.user):
+        sheets = sheets.filter(project__approver_email__iexact=request.user.email)
+    return render(request, "timesheets/approval_list.html", {"timesheets": sheets})
+
+
+@login_required
+@require_POST
+def timesheet_review(request, pk):
+    sheet = get_object_or_404(Timesheet, pk=pk)
+    if not can_review(request.user, sheet):
+        raise PermissionDenied
+    if sheet.status != Timesheet.Status.SUBMITTED:
+        messages.error(request, "Esta folha já não aguarda aprovação.")
+        return redirect("timesheet_detail", pk=pk)
+    form = ReviewForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, "Para devolver uma folha, indique o motivo.")
+        return redirect("timesheet_detail", pk=pk)
+    status = (
+        Timesheet.Status.APPROVED
+        if form.cleaned_data["action"] == "approve"
+        else Timesheet.Status.RETURNED
+    )
+    with transaction.atomic():
+        sheet.status = status
+        sheet.save(update_fields=["status", "updated_at"])
+        TimesheetHistory.objects.create(
+            timesheet=sheet,
+            actor=request.user,
+            status=status,
+            note=form.cleaned_data["note"].strip(),
+        )
+    messages.success(request, "Decisão registada.")
+    return redirect("timesheet_detail", pk=pk)
+
+
+@login_required
+def client_list(request):
+    if not is_manager(request.user):
+        raise PermissionDenied
+    return render(request, "timesheets/management_list.html", {
+        "title": "Clientes",
+        "objects": Client.objects.all(),
+        "create_url": "client_create",
+        "edit_url": "client_edit",
+        "object_label": "cliente",
+    })
+
+
+@login_required
+def client_create(request):
+    return manage_object(request, ClientForm, "timesheets/object_form.html", "Novo cliente", "client_list")
+
+
+@login_required
+def client_edit(request, pk):
+    return manage_object(request, ClientForm, "timesheets/object_form.html", "Editar cliente", "client_list", Client, pk)
+
+
+@login_required
+def project_list(request):
+    if not is_manager(request.user):
+        raise PermissionDenied
+    return render(request, "timesheets/management_list.html", {
+        "title": "Projetos",
+        "objects": Project.objects.select_related("client"),
+        "create_url": "project_create",
+        "edit_url": "project_edit",
+        "object_label": "projeto",
+    })
+
+
+@login_required
+def project_create(request):
+    return manage_object(request, ProjectForm, "timesheets/object_form.html", "Novo projeto", "project_list")
+
+
+@login_required
+def project_edit(request, pk):
+    return manage_object(request, ProjectForm, "timesheets/object_form.html", "Editar projeto", "project_list", Project, pk)
+
+
+def manage_object(request, form_class, template, title, success_url, model=None, pk=None):
+    if not is_manager(request.user):
+        raise PermissionDenied
+    instance = get_object_or_404(model, pk=pk) if model and pk else None
+    form = form_class(request.POST or None, instance=instance)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, f"{title} guardado.")
+        return redirect(success_url)
+    return render(request, template, {"form": form, "title": title})
