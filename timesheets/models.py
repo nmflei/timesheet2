@@ -1,9 +1,14 @@
 from datetime import timedelta
 from decimal import Decimal
+from decimal import ROUND_HALF_UP
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
+
+
+CENT = Decimal("0.01")
 
 
 class Client(models.Model):
@@ -31,6 +36,27 @@ class Project(models.Model):
     location = models.CharField("localização", max_length=240)
     approver_name = models.CharField("responsável pela aprovação", max_length=160)
     approver_email = models.EmailField("email do responsável")
+    normal_hour_rate = models.DecimalField(
+        "preço por hora normal (€)",
+        max_digits=9,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
+    overtime_hour_rate = models.DecimalField(
+        "preço por hora extra (€)",
+        max_digits=9,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
+    sunday_hour_rate = models.DecimalField(
+        "preço por hora ao domingo (€)",
+        max_digits=9,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
     created_at = models.DateTimeField("criado em", auto_now_add=True)
 
     class Meta:
@@ -99,8 +125,28 @@ class Timesheet(models.Model):
         return sum((entry.overtime_hours for entry in self.entries.all()), Decimal("0"))
 
     @property
+    def sunday_hours(self):
+        return sum((entry.sunday_hours for entry in self.entries.all()), Decimal("0"))
+
+    @property
     def total_hours(self):
-        return self.normal_hours + self.overtime_hours
+        return self.normal_hours + self.overtime_hours + self.sunday_hours
+
+    @property
+    def normal_amount(self):
+        return sum((entry.normal_amount for entry in self.entries.all()), Decimal("0"))
+
+    @property
+    def overtime_amount(self):
+        return sum((entry.overtime_amount for entry in self.entries.all()), Decimal("0"))
+
+    @property
+    def sunday_amount(self):
+        return sum((entry.sunday_amount for entry in self.entries.all()), Decimal("0"))
+
+    @property
+    def total_amount(self):
+        return self.normal_amount + self.overtime_amount + self.sunday_amount
 
 
 class DayEntry(models.Model):
@@ -158,9 +204,36 @@ class DayEntry(models.Model):
 
     @property
     def overtime_hours(self):
-        if self.entry_date.weekday() >= 5:
+        if self.entry_date.weekday() == 5:
             return self.total_hours
+        if self.entry_date.weekday() == 6:
+            return Decimal("0")
         return max(self.total_hours - Decimal("8"), Decimal("0"))
+
+    @property
+    def sunday_hours(self):
+        if self.entry_date.weekday() == 6:
+            return self.total_hours
+        return Decimal("0")
+
+    def _amount_for(self, hours, rate):
+        return (hours * rate).quantize(CENT, rounding=ROUND_HALF_UP)
+
+    @property
+    def normal_amount(self):
+        return self._amount_for(self.normal_hours, self.timesheet.project.normal_hour_rate)
+
+    @property
+    def overtime_amount(self):
+        return self._amount_for(self.overtime_hours, self.timesheet.project.overtime_hour_rate)
+
+    @property
+    def sunday_amount(self):
+        return self._amount_for(self.sunday_hours, self.timesheet.project.sunday_hour_rate)
+
+    @property
+    def total_amount(self):
+        return self.normal_amount + self.overtime_amount + self.sunday_amount
 
 
 class TimesheetHistory(models.Model):

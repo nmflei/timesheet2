@@ -6,7 +6,7 @@
 {% if objects %}<div class="table-wrap"><table><thead><tr><th>Nome</th><th>Detalhes</th><th></th></tr></thead><tbody>
 {% for object in objects %}<tr>
   {% if object.company_name %}<td>{{ object.company_name }}</td><td>NIF {{ object.tax_number }} · {{ object.contact_name }} · {{ object.email }}</td>
-  {% else %}<td>{{ object.name }}</td><td>{{ object.client }} · {{ object.location }} · Aprovação: {{ object.approver_name }} ({{ object.approver_email }})</td>{% endif %}
+  {% else %}<td>{{ object.name }}</td><td>{{ object.client }} · {{ object.location }} · Aprovação: {{ object.approver_name }} ({{ object.approver_email }})<br><span class="muted">Hora normal: {{ object.normal_hour_rate|floatformat:2 }} € · Hora extra: {{ object.overtime_hour_rate|floatformat:2 }} € · Domingo: {{ object.sunday_hour_rate|floatformat:2 }} €</span></td>{% endif %}
   <td><a class="button secondary small" href="{% url edit_url object.pk %}">Editar</a></td>
 </tr>{% endfor %}
 </tbody></table></div>{% else %}<p class="empty">Ainda não existem registos.</p>{% endif %}

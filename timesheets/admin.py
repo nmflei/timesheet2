@@ -11,7 +11,15 @@ class ClientAdmin(admin.ModelAdmin):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ("name", "client", "approver_name", "approver_email")
+    list_display = (
+        "name",
+        "client",
+        "normal_hour_rate",
+        "overtime_hour_rate",
+        "sunday_hour_rate",
+        "approver_name",
+        "approver_email",
+    )
     list_filter = ("client",)
     search_fields = ("name", "client__company_name", "approver_email")
 

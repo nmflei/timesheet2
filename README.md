@@ -6,7 +6,9 @@ MVP Django para registo de horas por colaborador, semana, cliente e projeto, com
 
 - Administração de clientes e projetos com dados de contacto e aprovador.
 - Folhas independentes para cada combinação de colaborador, semana, cliente e projeto.
-- Registo diário de segunda-feira a domingo; até 8 horas por dia útil são normais, o excedente e todas as horas de fim de semana são extras.
+- Cada projeto define as tarifas por hora normal, extra e de domingo, em euros.
+- Registo diário de segunda-feira a domingo; até 8 horas por dia útil são normais, o excedente e todas as horas de sábado são extra. As horas de domingo usam exclusivamente a tarifa de domingo e não acumulam com a tarifa extra.
+- A folha apresenta horas e valores por categoria, por dia e no total semanal; os valores são arredondados aos cêntimos por categoria e dia.
 - Submissão, aprovação ou devolução com nota e histórico de estados.
 - O aprovador acede com uma conta cujo email corresponde ao email configurado no projeto; administradores podem consultar todas as folhas.
 - Validação de semana à segunda-feira, relação cliente/projeto, duplicados, horas e pausas.

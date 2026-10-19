@@ -13,7 +13,16 @@ class ClientForm(forms.ModelForm):
 class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ["client", "name", "location", "approver_name", "approver_email"]
+        fields = [
+            "client",
+            "name",
+            "location",
+            "approver_name",
+            "approver_email",
+            "normal_hour_rate",
+            "overtime_hour_rate",
+            "sunday_hour_rate",
+        ]
 
 
 class TimesheetCreateForm(forms.ModelForm):

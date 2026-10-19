@@ -29,6 +29,9 @@ class TimesheetRulesTests(TestCase):
             location="Lisboa",
             approver_name="Rui",
             approver_email="rui@example.pt",
+            normal_hour_rate=Decimal("15.25"),
+            overtime_hour_rate=Decimal("22.50"),
+            sunday_hour_rate=Decimal("30.00"),
         )
         self.sheet = Timesheet.objects.create(
             employee=self.user,
@@ -49,7 +52,7 @@ class TimesheetRulesTests(TestCase):
         self.assertEqual(entry.normal_hours, Decimal("8"))
         self.assertEqual(entry.overtime_hours, Decimal("1"))
 
-    def test_all_weekend_hours_are_overtime(self):
+    def test_saturday_is_overtime_and_sunday_uses_only_sunday_rate(self):
         entry = DayEntry.objects.create(
             timesheet=self.sheet,
             entry_date=date(2026, 10, 24),
@@ -59,6 +62,68 @@ class TimesheetRulesTests(TestCase):
         )
         self.assertEqual(entry.normal_hours, Decimal("0"))
         self.assertEqual(entry.overtime_hours, Decimal("4"))
+        self.assertEqual(entry.sunday_hours, Decimal("0"))
+        self.assertEqual(entry.total_amount, Decimal("90.00"))
+
+        sunday_entry = DayEntry.objects.create(
+            timesheet=self.sheet,
+            entry_date=date(2026, 10, 25),
+            start_time=time(9),
+            end_time=time(13),
+            break_minutes=30,
+        )
+        self.assertEqual(sunday_entry.normal_hours, Decimal("0"))
+        self.assertEqual(sunday_entry.overtime_hours, Decimal("0"))
+        self.assertEqual(sunday_entry.sunday_hours, Decimal("4"))
+        self.assertEqual(sunday_entry.sunday_amount, Decimal("120.00"))
+        self.assertEqual(sunday_entry.total_amount, Decimal("120.00"))
+
+    def test_week_amount_is_summed_from_daily_category_amounts(self):
+        DayEntry.objects.create(
+            timesheet=self.sheet,
+            entry_date=date(2026, 10, 19),
+            start_time=time(9),
+            end_time=time(18),
+            break_minutes=60,
+        )
+        DayEntry.objects.create(
+            timesheet=self.sheet,
+            entry_date=date(2026, 10, 24),
+            start_time=time(9),
+            end_time=time(13),
+        )
+        DayEntry.objects.create(
+            timesheet=self.sheet,
+            entry_date=date(2026, 10, 25),
+            start_time=time(9),
+            end_time=time(13),
+        )
+        self.assertEqual(self.sheet.normal_hours, Decimal("8"))
+        self.assertEqual(self.sheet.overtime_hours, Decimal("5"))
+        self.assertEqual(self.sheet.sunday_hours, Decimal("4"))
+        self.assertEqual(self.sheet.total_hours, Decimal("17"))
+        self.assertEqual(self.sheet.normal_amount, Decimal("122.00"))
+        self.assertEqual(self.sheet.overtime_amount, Decimal("112.50"))
+        self.assertEqual(self.sheet.sunday_amount, Decimal("120.00"))
+        self.assertEqual(self.sheet.total_amount, Decimal("354.50"))
+
+    def test_project_form_rejects_negative_rates(self):
+        from .forms import ProjectForm
+
+        form = ProjectForm(
+            data={
+                "client": self.client_record.pk,
+                "name": "Projeto Inválido",
+                "location": "Lisboa",
+                "approver_name": "Rui",
+                "approver_email": "rui@example.pt",
+                "normal_hour_rate": "-1.00",
+                "overtime_hour_rate": "20.00",
+                "sunday_hour_rate": "30.00",
+            }
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("normal_hour_rate", form.errors)
 
     def test_sheet_must_start_on_monday_and_project_must_belong_to_client(self):
         with self.assertRaises(ValidationError):
@@ -140,6 +205,9 @@ class TimesheetWorkflowTests(TestCase):
             location="Lisboa",
             approver_name="Rui",
             approver_email="RUI@example.pt",
+            normal_hour_rate=Decimal("15.00"),
+            overtime_hour_rate=Decimal("25.00"),
+            sunday_hour_rate=Decimal("30.00"),
         )
         self.sheet = Timesheet.objects.create(
             employee=self.employee,
@@ -159,6 +227,9 @@ class TimesheetWorkflowTests(TestCase):
         self.client.force_login(self.approver)
         response = self.client.get(reverse("timesheet_detail", args=[self.sheet.pk]))
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Tarifa hora normal")
+        self.assertContains(response, "€/h")
+        self.assertContains(response, "120,00 €")
         response = self.client.post(
             reverse("timesheet_review", args=[self.sheet.pk]),
             {"action": "return", "note": "Indique a tarefa realizada."},
