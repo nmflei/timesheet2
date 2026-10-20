@@ -245,6 +245,20 @@ class ClientManagementTests(TestCase):
         self.assertContains(response, "Rua da Empresa, 12")
         self.assertContains(response, "1250-096")
 
+    def test_client_list_visibly_renders_associated_project_names_in_portuguese(self):
+        response = self.client.get(reverse("client_list"))
+        self.assertContains(response, "Projetos associados")
+        self.assertContains(response, "Projeto Lisboa")
+        self.assertContains(response, 'class="associated-project-list"')
+        self.assertContains(response, reverse("project_edit", args=[self.project.pk]))
+
+    def test_client_list_visibly_renders_associated_project_names_in_english(self):
+        self.client.cookies["timesheet_language"] = "en"
+        response = self.client.get(reverse("client_list"))
+        self.assertContains(response, "Associated projects")
+        self.assertContains(response, "Projeto Lisboa")
+        self.assertContains(response, 'class="associated-project-list"')
+
     def test_client_detail_shows_empty_projects_message(self):
         client_without_projects = Client.objects.create(
             company_name="Sem projetos",

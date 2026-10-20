@@ -49,13 +49,17 @@ Os dados PostgreSQL persistem no volume Docker `postgres_data`; ficheiros estát
 4. Coloque um proxy inverso como Caddy ou Nginx à frente do serviço web, publique apenas as portas 80/443 e configure o certificado TLS/renovação no proxy. Encaminhe o tráfego para a porta interna 8000 e preserve os cabeçalhos `Host` e `X-Forwarded-Proto: https`. A aplicação confia nesse último cabeçalho para detetar HTTPS.
 5. Faça cópias de segurança regulares do volume PostgreSQL (por exemplo, `pg_dump` executado no contentor `db`) e teste a reposição. Proteja o ficheiro `.env`, que contém credenciais, e não o inclua em backups públicos.
 
-Antes de uma atualização, faça backup da base de dados e depois atualize as imagens e execute:
+Antes de uma atualização, faça backup da base de dados. Para garantir que a imagem contém os templates e estáticos atuais, reconstrua sem cache e recrie o serviço web:
 
 ```sh
-docker compose build web
-docker compose up -d
+git pull origin main
+docker compose build --no-cache web
+docker compose up -d --force-recreate web
 docker compose exec web python manage.py migrate
+docker compose logs --tail=100 web
 ```
+
+O serviço executa migrações e recolhe os ficheiros estáticos no arranque. Depois de confirmar que está ativo, atualize a página no navegador sem cache (Ctrl+F5 ou Cmd+Shift+R). Se usar CDN ou proxy com cache de HTML, limpe também essa cache.
 
 ## Desenvolvimento e testes
 
