@@ -13,6 +13,11 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
+from config.email_delivery import (
+    EMAIL_CONFIGURATION_ERROR,
+    email_delivery_is_configured,
+)
+
 from .forms import (
     ClientForm,
     DayEntryFormSet,
@@ -299,13 +304,29 @@ def employee_list(request):
 def employee_create(request):
     if not is_manager(request.user):
         raise PermissionDenied
-    form = EmployeeForm(request.POST or None)
+    associate_existing = (
+        request.method == "POST"
+        and request.POST.get("associate_existing") == "1"
+    )
+    form = EmployeeForm(
+        request.POST or None,
+        allow_existing=associate_existing,
+    )
     if request.method == "POST" and form.is_valid():
-        if not settings.DEBUG and not settings.EMAIL_HOST:
-            form.add_error(
-                None,
-                _("Configure o SMTP antes de criar colaboradores para poder enviar o convite seguro."),
+        if associate_existing:
+            user = form.save()
+            messages.success(
+                request,
+                _("Colaborador associado à conta existente %(username)s.")
+                % {"username": user.get_username()},
             )
+            return redirect("employee_list")
+        if (
+            not email_delivery_is_configured()
+            and settings.EMAIL_BACKEND
+            != "django.core.mail.backends.console.EmailBackend"
+        ):
+            form.add_error(None, EMAIL_CONFIGURATION_ERROR)
         else:
             with transaction.atomic():
                 user = form.save()
@@ -320,7 +341,15 @@ def employee_create(request):
                 )
             messages.success(request, _("Colaborador criado e ligação segura para definir a palavra-passe enviada por email."))
             return redirect("employee_list")
-    return render(request, "timesheets/employee_form.html", {"form": form, "title": _("Novo colaborador")})
+    return render(
+        request,
+        "timesheets/employee_form.html",
+        {
+            "form": form,
+            "title": _("Novo colaborador"),
+            "associate_existing": associate_existing,
+        },
+    )
 
 
 @login_required

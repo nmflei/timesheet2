@@ -28,6 +28,9 @@ class EmployeeManagementTests(TestCase):
     @override_settings(
         EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
         EMAIL_HOST="smtp.example.test",
+        EMAIL_HOST_USER="smtp-user@example.test",
+        EMAIL_HOST_PASSWORD="test-smtp-token",
+        DEFAULT_FROM_EMAIL="Folhas de horas <noreply@example.test>",
     )
     def test_create_employee_account_sends_secure_password_setup_link(self):
         response = self.client.post(
@@ -79,6 +82,9 @@ class EmployeeManagementTests(TestCase):
     @override_settings(
         EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
         EMAIL_HOST="smtp.example.test",
+        EMAIL_HOST_USER="smtp-user@example.test",
+        EMAIL_HOST_PASSWORD="test-smtp-token",
+        DEFAULT_FROM_EMAIL="Folhas de horas <noreply@example.test>",
     )
     def test_password_setup_email_is_translated_into_english(self):
         self.client.cookies["timesheet_language"] = "en"
@@ -184,7 +190,93 @@ class EmployeeManagementTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn("email", response.context["form"].errors)
+        self.assertContains(response, "Conta existente encontrada")
+        self.assertContains(response, "Sem nome definido")
+        self.assertContains(response, "existing@example.pt")
+        self.assertContains(response, "Associar a esta conta existente")
+        self.assertContains(response, "Associar não altera a palavra-passe")
+        self.assertNotContains(response, "random-initial-password")
+        self.assertEqual(
+            response.context["form"].existing_user.username,
+            "existing@example.pt",
+        )
         self.assertFalse(EmployeeProfile.objects.exists())
+
+    def test_existing_account_can_be_associated_without_changing_access(self):
+        existing_user = get_user_model().objects.create_user(
+            username="nmflei@gmail.com",
+            email="nmflei@gmail.com",
+            first_name="Conta Existente",
+            is_staff=True,
+        )
+        existing_user.set_password("original-account-password")
+        existing_user.save()
+        response = self.client.post(
+            reverse("employee_create"),
+            {
+                "name": "Colaborador Associado",
+                "position": "Técnico",
+                "email": "nmflei@gmail.com",
+                "associate_existing": "1",
+            },
+        )
+        self.assertRedirects(response, reverse("employee_list"))
+        profile = EmployeeProfile.objects.get(user=existing_user)
+        self.assertEqual(profile.name, "Colaborador Associado")
+        self.assertEqual(profile.position, "Técnico")
+        existing_user.refresh_from_db()
+        self.assertTrue(existing_user.is_staff)
+        self.assertTrue(existing_user.check_password("original-account-password"))
+        self.assertEqual(existing_user.email, "nmflei@gmail.com")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_duplicate_email_already_associated_links_to_employee_edit(self):
+        existing_user = get_user_model().objects.create_user(
+            username="linked@example.pt",
+            email="linked@example.pt",
+            first_name="Colaborador Existente",
+        )
+        profile = EmployeeProfile.objects.create(
+            user=existing_user,
+            name="Colaborador Existente",
+            position="Técnico",
+        )
+        response = self.client.post(
+            reverse("employee_create"),
+            {
+                "name": "Duplicado",
+                "position": "Técnico",
+                "email": "linked@example.pt",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Esta conta já está associada a um colaborador.")
+        self.assertContains(
+            response,
+            reverse("employee_edit", args=[profile.pk]),
+        )
+        self.assertNotContains(response, "Associar a esta conta existente")
+        self.assertEqual(EmployeeProfile.objects.count(), 1)
+
+    def test_duplicate_email_account_details_are_translated_into_english(self):
+        existing_user = get_user_model().objects.create_user(
+            username="existing-en@example.pt",
+            email="existing-en@example.pt",
+            first_name="Existing Account",
+        )
+        self.client.cookies["timesheet_language"] = "en"
+        response = self.client.post(
+            reverse("employee_create"),
+            {
+                "name": "Duplicate",
+                "position": "Technician",
+                "email": existing_user.email,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "An existing account was found")
+        self.assertContains(response, "Existing Account")
+        self.assertContains(response, "Link to this existing account")
 
     def test_email_longer_than_username_limit_is_rejected(self):
         email = f"{'a' * 140}@example.pt"
@@ -213,7 +305,9 @@ class EmployeeManagementTests(TestCase):
             {"email": "reset@example.pt"},
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "O envio de emails não está configurado.")
+        self.assertContains(response, "O envio de emails está incompleto.")
+        self.assertContains(response, "EMAIL_HOST_PASSWORD")
+        self.assertContains(response, "docker compose up -d --force-recreate web")
         self.assertEqual(len(mail.outbox), 0)
 
         self.client.cookies["timesheet_language"] = "en"
@@ -222,7 +316,9 @@ class EmployeeManagementTests(TestCase):
             {"email": "reset@example.pt"},
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Email delivery is not configured.")
+        self.assertContains(response, "Email delivery is incomplete.")
+        self.assertContains(response, "EMAIL_HOST_PASSWORD")
+        self.assertContains(response, "docker compose up -d --force-recreate web")
 
     @override_settings(EMAIL_HOST="", DEBUG=False)
     def test_employee_creation_requires_configured_smtp_in_production(self):
@@ -239,6 +335,32 @@ class EmployeeManagementTests(TestCase):
             get_user_model().objects.filter(email="sem-smtp@example.pt").exists()
         )
         self.assertIn("__all__", response.context["form"].errors)
+        self.assertContains(response, "EMAIL_HOST_PASSWORD")
+        self.assertContains(response, "não a palavra-passe normal da caixa de correio")
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        EMAIL_HOST="smtp.example.test",
+        EMAIL_HOST_USER="smtp-user@example.test",
+        EMAIL_HOST_PASSWORD="",
+        DEFAULT_FROM_EMAIL="Folhas de horas <noreply@example.test>",
+        DEBUG=False,
+    )
+    def test_employee_creation_requires_smtp_credentials_not_only_host(self):
+        response = self.client.post(
+            reverse("employee_create"),
+            {
+                "name": "Pessoa Sem Credenciais SMTP",
+                "position": "Técnico",
+                "email": "sem-credenciais@example.pt",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
+            get_user_model().objects.filter(email="sem-credenciais@example.pt").exists()
+        )
+        self.assertContains(response, "EMAIL_HOST_PASSWORD")
+        self.assertContains(response, "recrie o serviço web")
 
     def test_non_manager_cannot_manage_employees(self):
         employee = get_user_model().objects.create_user(
@@ -246,9 +368,24 @@ class EmployeeManagementTests(TestCase):
             email="employee@example.pt",
             password="employee-password",
         )
+        get_user_model().objects.create_user(
+            username="private-account@example.pt",
+            email="private-account@example.pt",
+        )
         self.client.force_login(employee)
         self.assertEqual(self.client.get(reverse("employee_list")).status_code, 403)
         self.assertEqual(self.client.get(reverse("employee_create")).status_code, 403)
+        response = self.client.post(
+            reverse("employee_create"),
+            {
+                "name": "Unauthorized",
+                "position": "Technician",
+                "email": "private-account@example.pt",
+                "associate_existing": "1",
+            },
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(EmployeeProfile.objects.exists())
 
     def test_employee_action_requires_post(self):
         user = get_user_model().objects.create_user(

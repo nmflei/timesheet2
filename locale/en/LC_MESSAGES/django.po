@@ -164,11 +164,8 @@ msgstr "Employee created."
 msgid "Colaborador criado e ligação segura para definir a palavra-passe enviada por email."
 msgstr "Employee created and a secure password setup link sent by email."
 
-msgid "Configure o SMTP antes de criar colaboradores para poder enviar o convite seguro."
-msgstr "Configure SMTP before creating employees so a secure invitation can be sent."
-
-msgid "O envio de emails não está configurado. Contacte o administrador."
-msgstr "Email delivery is not configured. Contact the administrator."
+msgid "O envio de emails está incompleto. Configure no ficheiro .env o SMTP do seu fornecedor (EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_USE_TLS/EMAIL_USE_SSL e DEFAULT_FROM_EMAIL). Use a credencial SMTP/palavra-passe de aplicação do fornecedor, não a palavra-passe normal da caixa de correio; depois recrie o serviço web com docker compose up -d --force-recreate web e tente novamente."
+msgstr "Email delivery is incomplete. Configure your provider's SMTP settings in the .env file (EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_USE_TLS/EMAIL_USE_SSL and DEFAULT_FROM_EMAIL). Use the provider's SMTP credential or app password, not the mailbox's regular password; then recreate the web service with docker compose up -d --force-recreate web and try again."
 
 msgid "Dados do colaborador atualizados."
 msgstr "Employee details updated."
@@ -181,6 +178,57 @@ msgstr "Employee account deactivated."
 
 msgid "Já existe uma conta com este email."
 msgstr "An account with this email already exists."
+
+msgid "Já existe uma conta com este email: %(name)s (utilizador: %(username)s)."
+msgstr "An account already exists for this email: %(name)s (username: %(username)s)."
+
+msgid "Mais do que uma conta corresponde a este email. Consulte a administração para resolver a duplicação."
+msgstr "More than one account matches this email. Check the administration site to resolve the duplicate."
+
+msgid "Sem nome definido"
+msgstr "No name provided"
+
+msgid "Conta existente encontrada"
+msgstr "An existing account was found"
+
+msgid "Nome da conta"
+msgstr "Account name"
+
+msgid "Nome de utilizador"
+msgstr "Username"
+
+msgid "Email da conta"
+msgstr "Account email"
+
+msgid "Não definido"
+msgstr "Not set"
+
+msgid "Esta conta tem permissões de superutilizador, que serão mantidas se for associada."
+msgstr "This account has superuser permissions, which will be retained if it is linked."
+
+msgid "Esta conta tem permissões de gestão, que serão mantidas se for associada."
+msgstr "This account has management permissions, which will be retained if it is linked."
+
+msgid "Esta conta já está associada a um colaborador."
+msgstr "This account is already linked to an employee."
+
+msgid "Associar não altera a palavra-passe nem as permissões da conta."
+msgstr "Linking does not change the account password or permissions."
+
+msgid "Associar a esta conta existente"
+msgstr "Link to this existing account"
+
+msgid "Esta conta está inativa. Ative-a ou corrija o email na administração antes de associar."
+msgstr "This account is inactive. Activate it or correct its email in the administration site before linking it."
+
+msgid "O email desta conta é diferente do indicado. Corrija os dados da conta antes de associar."
+msgstr "This account's email differs from the one entered. Correct the account details before linking it."
+
+msgid "Abrir conta na administração Django"
+msgstr "Open account in Django administration"
+
+msgid "Colaborador associado à conta existente %(username)s."
+msgstr "Employee linked to existing account %(username)s."
 
 msgid "O email não pode exceder 150 caracteres porque também será o nome de utilizador."
 msgstr "The email cannot exceed 150 characters because it will also be the username."

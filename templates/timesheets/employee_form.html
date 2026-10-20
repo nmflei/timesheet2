@@ -10,6 +10,34 @@
   <form method="post">{% csrf_token %}
     {{ form.non_field_errors }}
     {% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
+    {% if form.existing_user %}
+    <aside class="panel" role="status">
+      <h2>{% trans "Conta existente encontrada" %}</h2>
+      <dl>
+        <dt>{% trans "Nome da conta" %}</dt><dd>{% if form.existing_user.get_full_name %}{{ form.existing_user.get_full_name }}{% else %}{% trans "Sem nome definido" %}{% endif %}</dd>
+        <dt>{% trans "Nome de utilizador" %}</dt><dd>{{ form.existing_user.get_username }}</dd>
+        <dt>{% trans "Email da conta" %}</dt><dd>{% if form.existing_user.email %}{{ form.existing_user.email }}{% else %}{% trans "Não definido" %}{% endif %}</dd>
+      </dl>
+      {% if form.existing_user.is_superuser %}
+      <p class="muted">{% trans "Esta conta tem permissões de superutilizador, que serão mantidas se for associada." %}</p>
+      {% elif form.existing_user.is_staff %}
+      <p class="muted">{% trans "Esta conta tem permissões de gestão, que serão mantidas se for associada." %}</p>
+      {% endif %}
+      {% if form.existing_profile %}
+      <p>{% trans "Esta conta já está associada a um colaborador." %} <a href="{% url 'employee_edit' form.existing_profile.pk %}">{% trans "Editar colaborador" %}</a></p>
+      {% elif form.can_associate_existing %}
+      <p class="muted">{% trans "Associar não altera a palavra-passe nem as permissões da conta." %}</p>
+      <button class="button primary" type="submit" name="associate_existing" value="1">{% trans "Associar a esta conta existente" %}</button>
+      {% elif not form.existing_user.is_active %}
+      <p class="muted">{% trans "Esta conta está inativa. Ative-a ou corrija o email na administração antes de associar." %}</p>
+      {% else %}
+      <p class="muted">{% trans "O email desta conta é diferente do indicado. Corrija os dados da conta antes de associar." %}</p>
+      {% endif %}
+      {% if perms.auth.change_user %}
+      <p><a href="{% url 'admin:auth_user_change' form.existing_user.pk %}">{% trans "Abrir conta na administração Django" %}</a></p>
+      {% endif %}
+    </aside>
+    {% endif %}
     <div class="actions"><button class="button primary" type="submit">{% trans "Guardar" %}</button><a class="button secondary" href="{% url 'employee_list' %}">{% trans "Cancelar" %}</a></div>
   </form>
 </section>

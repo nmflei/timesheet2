@@ -55,9 +55,13 @@ class EmployeeForm(forms.Form):
     position = forms.CharField(label=_("Posição"), max_length=120)
     email = forms.EmailField(label=_("Email"), max_length=254)
 
-    def __init__(self, *args, instance=None, **kwargs):
+    def __init__(self, *args, instance=None, allow_existing=False, **kwargs):
         self.instance = instance
         self.is_new = instance is None
+        self.allow_existing = allow_existing
+        self.existing_user = None
+        self.existing_profile = None
+        self.can_associate_existing = False
         super().__init__(*args, **kwargs)
         if instance is not None:
             profile = instance.employee_profile
@@ -74,8 +78,33 @@ class EmployeeForm(forms.Form):
         )
         if self.instance is not None:
             users = users.exclude(pk=self.instance.pk)
-        if users.exists():
-            raise forms.ValidationError(_("Já existe uma conta com este email."))
+        matches = list(users.order_by("pk")[:2])
+        if len(matches) > 1:
+            raise forms.ValidationError(
+                _("Mais do que uma conta corresponde a este email. Consulte a administração para resolver a duplicação.")
+            )
+        if matches:
+            self.existing_user = matches[0]
+            self.existing_profile = EmployeeProfile.objects.filter(
+                user=self.existing_user
+            ).first()
+            name = self.existing_user.get_full_name().strip() or _("Sem nome definido")
+            self.can_associate_existing = (
+                self.existing_profile is None
+                and self.existing_user.is_active
+                and self.existing_user.email.casefold() == email
+            )
+            if self.allow_existing and self.can_associate_existing:
+                return email
+            raise forms.ValidationError(
+                _(
+                    "Já existe uma conta com este email: %(name)s (utilizador: %(username)s)."
+                ),
+                params={
+                    "name": name,
+                    "username": self.existing_user.get_username(),
+                },
+            )
         if len(email) > 150:
             raise forms.ValidationError(
                 _("O email não pode exceder 150 caracteres porque também será o nome de utilizador.")
@@ -84,6 +113,14 @@ class EmployeeForm(forms.Form):
 
     @transaction.atomic
     def save(self):
+        if self.allow_existing and self.can_associate_existing:
+            EmployeeProfile.objects.create(
+                user=self.existing_user,
+                name=self.cleaned_data["name"],
+                position=self.cleaned_data["position"],
+            )
+            return self.existing_user
+
         User = get_user_model()
         user = self.instance or User()
         user.username = self.cleaned_data["email"]

@@ -26,7 +26,14 @@ Requisitos: Docker Engine e Docker Compose v2. Na pasta do projeto:
 cp .env.example .env
 ```
 
-Edite `.env`: crie um `SECRET_KEY` único e aleatório, defina palavras-passe fortes e substitua `ALLOWED_HOSTS` pelos nomes DNS/IP efetivos. Para uso apenas local, pode manter `localhost,127.0.0.1`. `POSTGRES_PASSWORD` e `DB_PASSWORD` têm de ser iguais. Configure `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` e TLS/SSL para o SMTP que enviará convites e redefinições de palavra-passe. Em `DEBUG=True`, quando não há SMTP, as mensagens são escritas na consola para desenvolvimento.
+Edite `.env`: crie um `SECRET_KEY` único e aleatório, defina palavras-passe fortes e substitua `ALLOWED_HOSTS` pelos nomes DNS/IP efetivos. Para uso apenas local, pode manter `localhost,127.0.0.1`. `POSTGRES_PASSWORD` e `DB_PASSWORD` têm de ser iguais. Para convites e redefinições, obtenha as definições SMTP específicas no painel/documentação do fornecedor de email: `EMAIL_HOST` (por exemplo, `smtp.gmail.com` ou `smtp.office365.com`), `EMAIL_PORT`, `EMAIL_HOST_USER` (utilizador SMTP indicado pelo fornecedor), `EMAIL_HOST_PASSWORD` (token/credencial SMTP ou palavra-passe de aplicação), `EMAIL_USE_TLS`/`EMAIL_USE_SSL` e `DEFAULT_FROM_EMAIL` (remetente verificado e autorizado pelo fornecedor). Gmail/Workspace normalmente requer uma palavra-passe de aplicação; Microsoft 365 pode exigir que SMTP AUTH esteja ativado. **Não use a palavra-passe normal da caixa de correio.** Na porta 587 use normalmente TLS/STARTTLS (`EMAIL_USE_TLS=True`, `EMAIL_USE_SSL=False`); siga o fornecedor se ele exigir a porta 465 com SSL. Em `DEBUG=True`, sem anfitrião SMTP, as mensagens são escritas na consola para desenvolvimento.
+
+Depois de alterar `.env`, recrie o contentor para carregar as variáveis novas (não é necessário reconstruir a imagem):
+
+```sh
+docker compose up -d --force-recreate web
+docker compose logs --tail=100 web
+```
 
 ```sh
 docker compose up --build -d
@@ -35,7 +42,7 @@ docker compose exec web python manage.py createsuperuser
 
 Abra `http://localhost:8000/conta/entrar/`. O utilizador de `createsuperuser` administra contas em `/admin/`; crie contas para aprovadores aí. Depois, com a conta de administrador, adicione clientes, projetos e colaboradores na aplicação. O email da conta do aprovador tem de coincidir com o email do responsável configurado no respetivo projeto.
 
-Os colaboradores são criados e geridos em **Colaboradores** (`/colaboradores/`). Ao criar uma conta, o sistema envia um link temporário de definição da palavra-passe para o email indicado. A página de início de sessão também disponibiliza a recuperação da palavra-passe. Em produção, configure SMTP válido antes de criar colaboradores.
+Os colaboradores são criados e geridos em **Colaboradores** (`/colaboradores/`). Ao criar uma conta, o sistema envia um link temporário de definição da palavra-passe para o email indicado. Se esse email já pertencer a uma conta, a aplicação mostra ao gestor autenticado o nome, o nome de utilizador e o email da conta; pode associá-la a um perfil de colaborador sem alterar a palavra-passe nem as permissões. Se já existir perfil, a aplicação liga diretamente à sua edição. As contas e permissões também podem ser consultadas em **Administração Django → Autenticação e autorização → Utilizadores** (`/admin/auth/user/`), para contas com acesso autorizado à administração. A página de início de sessão também disponibiliza a recuperação da palavra-passe. Em produção, configure SMTP válido antes de criar colaboradores.
 
 Para parar sem apagar os dados:
 
@@ -48,7 +55,7 @@ Os dados PostgreSQL persistem no volume Docker `postgres_data`; ficheiros estát
 ## Deployment numa VM Debian 13
 
 1. Instale Docker Engine e o plugin Docker Compose v2 a partir do repositório oficial da Docker para Debian. Mantenha o sistema e as imagens atualizados e restrinja o acesso SSH e às portas da VM.
-2. Copie o repositório para a VM, crie `.env` a partir de `.env.example` e configure uma chave Django aleatória, credenciais exclusivas e fortes para PostgreSQL, `DEBUG=False`, `ALLOWED_HOSTS` com o domínio público, `CSRF_TRUSTED_ORIGINS=https://o-seu-dominio` e credenciais SMTP/TLS válidas para enviar os links de palavra-passe.
+2. Copie o repositório para a VM, crie `.env` a partir de `.env.example` e configure uma chave Django aleatória, credenciais exclusivas e fortes para PostgreSQL, `DEBUG=False`, `ALLOWED_HOSTS` com o domínio público, `CSRF_TRUSTED_ORIGINS=https://o-seu-dominio` e credenciais SMTP/TLS válidas para enviar os links de palavra-passe. Use a credencial SMTP ou palavra-passe de aplicação indicada pelo seu fornecedor, nunca a palavra-passe normal da caixa de correio, e indique um remetente verificado.
 3. Ative `SECURE_SSL_REDIRECT=True` quando o proxy TLS estiver corretamente configurado. Inicie a aplicação com `docker compose up --build -d` e crie o primeiro administrador com `docker compose exec web python manage.py createsuperuser`. As migrações e a recolha de estáticos são executadas no arranque do serviço web.
 4. Coloque um proxy inverso como Caddy ou Nginx à frente do serviço web, publique apenas as portas 80/443 e configure o certificado TLS/renovação no proxy. Encaminhe o tráfego para a porta interna 8000 e preserve os cabeçalhos `Host` e `X-Forwarded-Proto: https`. A aplicação confia nesse último cabeçalho para detetar HTTPS.
 5. Faça cópias de segurança regulares do volume PostgreSQL (por exemplo, `pg_dump` executado no contentor `db`) e teste a reposição. Proteja o ficheiro `.env`, que contém credenciais, e não o inclua em backups públicos.
