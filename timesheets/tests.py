@@ -1,16 +1,266 @@
+import re
 from datetime import date, time
 from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import translation
 
-from .forms import ClientForm, TimesheetCreateForm
-from .models import Client, DayEntry, Project, Timesheet
+from .forms import ClientForm, EmployeeForm, TimesheetCreateForm
+from .models import Client, DayEntry, EmployeeProfile, Project, Timesheet
+
+
+class EmployeeManagementTests(TestCase):
+    def setUp(self):
+        self.manager = get_user_model().objects.create_user(
+            username="employee-manager",
+            password="admin-test-password",
+            email="manager@example.pt",
+            is_staff=True,
+        )
+        self.client.force_login(self.manager)
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        EMAIL_HOST="smtp.example.test",
+    )
+    def test_create_employee_account_sends_secure_password_setup_link(self):
+        response = self.client.post(
+            reverse("employee_create"),
+            {
+                "name": "Maria Silva",
+                "position": "Técnica de obra",
+                "email": "maria@example.pt",
+            },
+        )
+        self.assertRedirects(response, reverse("employee_list"))
+        user = get_user_model().objects.get(email="maria@example.pt")
+        profile = EmployeeProfile.objects.get(user=user)
+        self.assertEqual(user.username, "maria@example.pt")
+        self.assertEqual(user.first_name, "Maria Silva")
+        self.assertEqual(profile.name, "Maria Silva")
+        self.assertEqual(profile.position, "Técnica de obra")
+        self.assertTrue(user.has_usable_password())
+        self.assertFalse(user.check_password("maria@example.pt"))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("maria@example.pt", mail.outbox[0].to)
+        self.assertIn("maria@example.pt", mail.outbox[0].body)
+        self.assertContains(
+            self.client.get(reverse("login")),
+            "Email ou nome de utilizador",
+        )
+        reset_path = re.search(
+            r"http://testserver(?P<path>/conta/redefinir-palavra-passe/[^/\r\n]+/[^/\r\n]+/)",
+            mail.outbox[0].body,
+        ).group("path")
+        reset_page = self.client.get(reset_path, follow=True)
+        self.assertEqual(reset_page.status_code, 200)
+        confirm_path = reset_page.redirect_chain[-1][0]
+        response = self.client.post(
+            confirm_path,
+            {
+                "new_password1": "Ultra-Secure-Test-Password-73!",
+                "new_password2": "Ultra-Secure-Test-Password-73!",
+            },
+        )
+        self.assertRedirects(response, reverse("password_reset_complete"))
+        self.assertTrue(
+            self.client.login(
+                username="maria@example.pt",
+                password="Ultra-Secure-Test-Password-73!",
+            )
+        )
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        EMAIL_HOST="smtp.example.test",
+    )
+    def test_password_setup_email_is_translated_into_english(self):
+        self.client.cookies["timesheet_language"] = "en"
+        response = self.client.post(
+            reverse("employee_create"),
+            {
+                "name": "John Smith",
+                "position": "Site manager",
+                "email": "john@example.pt",
+            },
+        )
+        self.assertRedirects(response, reverse("employee_list"))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject, "Set your account password")
+        self.assertIn(
+            "An employee account has been created for this address",
+            mail.outbox[0].body,
+        )
+
+    def test_employees_can_be_edited_without_replacing_their_password(self):
+        user = get_user_model().objects.create_user(
+            username="joao@example.pt",
+            email="joao@example.pt",
+            first_name="João Costa",
+            password="original-safe-password",
+        )
+        profile = EmployeeProfile.objects.create(
+            user=user, name="João Costa", position="Técnico"
+        )
+        response = self.client.post(
+            reverse("employee_edit", args=[profile.pk]),
+            {
+                "name": "João Costa",
+                "position": "Encarregado",
+                "email": "joao.novo@example.pt",
+            },
+        )
+        self.assertRedirects(response, reverse("employee_list"))
+        user.refresh_from_db()
+        profile.refresh_from_db()
+        self.assertEqual(user.email, "joao.novo@example.pt")
+        self.assertEqual(user.username, "joao.novo@example.pt")
+        self.assertTrue(user.check_password("original-safe-password"))
+        self.assertEqual(profile.position, "Encarregado")
+
+    def test_employee_can_be_deactivated_and_reactivated_without_deletion(self):
+        user = get_user_model().objects.create_user(
+            username="ana@example.pt",
+            email="ana@example.pt",
+            first_name="Ana",
+            password="original-safe-password",
+        )
+        profile = EmployeeProfile.objects.create(user=user, name="Ana", position="Assistente")
+        url = reverse("employee_toggle_active", args=[profile.pk])
+        response = self.client.post(url)
+        self.assertRedirects(response, reverse("employee_list"))
+        user.refresh_from_db()
+        self.assertFalse(user.is_active)
+        self.assertTrue(EmployeeProfile.objects.filter(pk=profile.pk).exists())
+
+        self.client.post(url)
+        user.refresh_from_db()
+        self.assertTrue(user.is_active)
+
+    def test_employee_list_shows_name_position_email_and_status(self):
+        user = get_user_model().objects.create_user(
+            username="ana@example.pt",
+            email="ana@example.pt",
+            first_name="Ana Silva",
+            password="original-safe-password",
+        )
+        EmployeeProfile.objects.create(
+            user=user, name="Ana Silva", position="Assistente",
+        )
+        response = self.client.get(reverse("employee_list"))
+        self.assertContains(response, "Ana Silva")
+        self.assertContains(response, "Assistente")
+        self.assertContains(response, "ana@example.pt")
+        self.assertContains(response, "Ativo")
+
+    def test_employee_navigation_and_labels_are_translated_into_english(self):
+        self.client.cookies["timesheet_language"] = "en"
+        response = self.client.get(reverse("employee_list"))
+        self.assertContains(response, "Employees")
+        self.assertContains(response, "Add employee")
+        self.assertContains(response, "There are no employees yet.")
+        login = self.client.get(reverse("login"))
+        self.assertContains(login, "Forgot your password?")
+
+    def test_duplicate_email_cannot_create_employee_account(self):
+        get_user_model().objects.create_user(
+            username="existing@example.pt",
+            email="existing@example.pt",
+            password="existing-password",
+        )
+        response = self.client.post(
+            reverse("employee_create"),
+            {
+                "name": "Pessoa Duplicada",
+                "position": "Técnico",
+                "email": "existing@example.pt",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("email", response.context["form"].errors)
+        self.assertFalse(EmployeeProfile.objects.exists())
+
+    def test_email_longer_than_username_limit_is_rejected(self):
+        email = f"{'a' * 140}@example.pt"
+        form = EmployeeForm(
+            data={"name": "Email longo", "position": "Técnico", "email": email}
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("150 caracteres", str(form.errors["email"]))
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        EMAIL_HOST="",
+        DEBUG=False,
+    )
+    def test_password_reset_reports_missing_smtp_without_exposing_account_existence(self):
+        user = get_user_model().objects.create_user(
+            username="reset@example.pt",
+            email="reset@example.pt",
+            password="random-initial-password",
+        )
+        EmployeeProfile.objects.create(
+            user=user, name="Reset User", position="Técnico"
+        )
+        response = self.client.post(
+            reverse("password_reset"),
+            {"email": "reset@example.pt"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "O envio de emails não está configurado.")
+        self.assertEqual(len(mail.outbox), 0)
+
+        self.client.cookies["timesheet_language"] = "en"
+        response = self.client.post(
+            reverse("password_reset"),
+            {"email": "reset@example.pt"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Email delivery is not configured.")
+
+    @override_settings(EMAIL_HOST="", DEBUG=False)
+    def test_employee_creation_requires_configured_smtp_in_production(self):
+        response = self.client.post(
+            reverse("employee_create"),
+            {
+                "name": "Pessoa Sem SMTP",
+                "position": "Técnico",
+                "email": "sem-smtp@example.pt",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
+            get_user_model().objects.filter(email="sem-smtp@example.pt").exists()
+        )
+        self.assertIn("__all__", response.context["form"].errors)
+
+    def test_non_manager_cannot_manage_employees(self):
+        employee = get_user_model().objects.create_user(
+            username="employee@example.pt",
+            email="employee@example.pt",
+            password="employee-password",
+        )
+        self.client.force_login(employee)
+        self.assertEqual(self.client.get(reverse("employee_list")).status_code, 403)
+        self.assertEqual(self.client.get(reverse("employee_create")).status_code, 403)
+
+    def test_employee_action_requires_post(self):
+        user = get_user_model().objects.create_user(
+            username="active@example.pt", email="active@example.pt", password="password"
+        )
+        profile = EmployeeProfile.objects.create(
+            user=user, name="Ativo", position="Técnico"
+        )
+        response = self.client.get(reverse("employee_toggle_active", args=[profile.pk]))
+        self.assertEqual(response.status_code, 405)
+        user.refresh_from_db()
+        self.assertTrue(user.is_active)
 
 
 class TimesheetRulesTests(TestCase):

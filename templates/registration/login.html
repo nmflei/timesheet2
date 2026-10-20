@@ -10,5 +10,6 @@
     {% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
     <button class="button primary" type="submit">{% trans "Entrar" %}</button>
   </form>
+  <p class="help-text"><a href="{% url 'password_reset' %}">{% trans "Esqueceu-se da palavra-passe?" %}</a></p>
 </section>
 {% endblock %}

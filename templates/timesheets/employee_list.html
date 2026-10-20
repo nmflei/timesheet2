@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Colaboradores" %}{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <h1>{% trans "Colaboradores" %}</h1>
+  <a class="button primary" href="{% url 'employee_create' %}">{% trans "Adicionar colaborador" %}</a>
+</div>
+<section class="panel">
+  {% if employees %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>{% trans "Nome" %}</th><th>{% trans "Posição" %}</th><th>{% trans "Email" %}</th><th>{% trans "Estado" %}</th><th></th></tr></thead>
+      <tbody>
+        {% for employee in employees %}
+        <tr>
+          <td>{{ employee.name }}</td>
+          <td>{{ employee.position }}</td>
+          <td>{{ employee.user.email }}</td>
+          <td>{% if employee.user.is_active %}{% trans "Ativo" %}{% else %}{% trans "Inativo" %}{% endif %}</td>
+          <td>
+            <div class="actions">
+              <a class="button secondary small" href="{% url 'employee_edit' employee.pk %}">{% trans "Editar" %}</a>
+              <form method="post" action="{% url 'employee_toggle_active' employee.pk %}">
+                {% csrf_token %}
+                {% if employee.user.is_active %}
+                <button class="button danger small" type="submit">{% trans "Desativar" %}</button>
+                {% else %}
+                <button class="button secondary small" type="submit">{% trans "Ativar" %}</button>
+                {% endif %}
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">{% trans "Ainda não existem colaboradores." %}</p>
+  {% endif %}
+</section>
+{% endblock %}

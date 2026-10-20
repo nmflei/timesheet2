@@ -1,8 +1,14 @@
+import secrets
+
 from django import forms
+from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import AuthenticationForm
+from django.db import transaction
+from django.db.models import Q
 from django.forms import modelformset_factory
 from django.utils.translation import gettext_lazy as _
 
-from .models import Client, DayEntry, Project, Timesheet
+from .models import Client, DayEntry, EmployeeProfile, Project, Timesheet
 
 
 class ClientForm(forms.ModelForm):
@@ -42,6 +48,65 @@ class ProjectForm(forms.ModelForm):
             self.fields["client"].queryset = Client.objects.filter(pk=fixed_client.pk)
             self.fields["client"].initial = fixed_client.pk
             self.fields["client"].widget = forms.HiddenInput()
+
+
+class EmployeeForm(forms.Form):
+    name = forms.CharField(label=_("Nome"), max_length=150)
+    position = forms.CharField(label=_("Posição"), max_length=120)
+    email = forms.EmailField(label=_("Email"), max_length=254)
+
+    def __init__(self, *args, instance=None, **kwargs):
+        self.instance = instance
+        self.is_new = instance is None
+        super().__init__(*args, **kwargs)
+        if instance is not None:
+            profile = instance.employee_profile
+            self.initial.update(
+                name=profile.name,
+                position=profile.position,
+                email=instance.email,
+            )
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().casefold()
+        users = get_user_model().objects.filter(
+            Q(email__iexact=email) | Q(username__iexact=email)
+        )
+        if self.instance is not None:
+            users = users.exclude(pk=self.instance.pk)
+        if users.exists():
+            raise forms.ValidationError(_("Já existe uma conta com este email."))
+        if len(email) > 150:
+            raise forms.ValidationError(
+                _("O email não pode exceder 150 caracteres porque também será o nome de utilizador.")
+            )
+        return email
+
+    @transaction.atomic
+    def save(self):
+        User = get_user_model()
+        user = self.instance or User()
+        user.username = self.cleaned_data["email"]
+        user.email = self.cleaned_data["email"]
+        user.first_name = self.cleaned_data["name"]
+        if self.instance is None:
+            user.set_password(secrets.token_urlsafe(48))
+        user.save()
+        EmployeeProfile.objects.update_or_create(
+            user=user,
+            defaults={
+                "name": self.cleaned_data["name"],
+                "position": self.cleaned_data["position"],
+            },
+        )
+        return user
+
+
+class TimesheetAuthenticationForm(AuthenticationForm):
+    username = forms.CharField(
+        label=_("Email ou nome de utilizador"),
+        widget=forms.TextInput(attrs={"autofocus": True}),
+    )
 
 
 class TimesheetCreateForm(forms.ModelForm):

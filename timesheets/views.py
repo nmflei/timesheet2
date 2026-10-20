@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordResetForm
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.http import HttpResponseRedirect, JsonResponse
@@ -15,11 +16,12 @@ from django.views.decorators.http import require_POST
 from .forms import (
     ClientForm,
     DayEntryFormSet,
+    EmployeeForm,
     ProjectForm,
     ReviewForm,
     TimesheetCreateForm,
 )
-from .models import Client, DayEntry, Project, Timesheet, TimesheetHistory
+from .models import Client, DayEntry, EmployeeProfile, Project, Timesheet, TimesheetHistory
 
 
 def is_manager(user):
@@ -283,6 +285,70 @@ def project_create_for_client(request, pk):
 @login_required
 def project_edit(request, pk):
     return manage_object(request, ProjectForm, "timesheets/object_form.html", _("Editar projeto"), "project_list", Project, pk)
+
+
+@login_required
+def employee_list(request):
+    if not is_manager(request.user):
+        raise PermissionDenied
+    employees = EmployeeProfile.objects.select_related("user").all()
+    return render(request, "timesheets/employee_list.html", {"employees": employees})
+
+
+@login_required
+def employee_create(request):
+    if not is_manager(request.user):
+        raise PermissionDenied
+    form = EmployeeForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        if not settings.DEBUG and not settings.EMAIL_HOST:
+            form.add_error(
+                None,
+                _("Configure o SMTP antes de criar colaboradores para poder enviar o convite seguro."),
+            )
+        else:
+            with transaction.atomic():
+                user = form.save()
+                reset_form = PasswordResetForm({"email": user.email})
+                if not reset_form.is_valid():
+                    raise RuntimeError("Could not prepare the employee password setup email.")
+                reset_form.save(
+                    request=request,
+                    use_https=request.is_secure(),
+                    email_template_name="registration/password_reset_email.txt",
+                    subject_template_name="registration/password_reset_subject.txt",
+                )
+            messages.success(request, _("Colaborador criado e ligação segura para definir a palavra-passe enviada por email."))
+            return redirect("employee_list")
+    return render(request, "timesheets/employee_form.html", {"form": form, "title": _("Novo colaborador")})
+
+
+@login_required
+def employee_edit(request, pk):
+    if not is_manager(request.user):
+        raise PermissionDenied
+    profile = get_object_or_404(EmployeeProfile.objects.select_related("user"), pk=pk)
+    form = EmployeeForm(request.POST or None, instance=profile.user)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, _("Dados do colaborador atualizados."))
+        return redirect("employee_list")
+    return render(request, "timesheets/employee_form.html", {"form": form, "title": _("Editar colaborador")})
+
+
+@login_required
+@require_POST
+def employee_toggle_active(request, pk):
+    if not is_manager(request.user):
+        raise PermissionDenied
+    profile = get_object_or_404(EmployeeProfile.objects.select_related("user"), pk=pk)
+    profile.user.is_active = not profile.user.is_active
+    profile.user.save(update_fields=["is_active"])
+    messages.success(
+        request,
+        _("Conta do colaborador ativada.") if profile.user.is_active else _("Conta do colaborador desativada."),
+    )
+    return redirect("employee_list")
 
 
 def manage_object(

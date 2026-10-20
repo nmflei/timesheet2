@@ -5,6 +5,8 @@ MVP Django para registo de horas por colaborador, semana, cliente e projeto, com
 ## Funcionalidades
 
 - Administração de clientes e projetos com dados de contacto e aprovador.
+- Gestão de colaboradores com conta de acesso, nome, posição, email e ativação/desativação sem apagar o histórico.
+- As contas novas recebem por email um link temporário de uso único para definirem a sua própria palavra-passe; nunca é mostrada ou guardada uma palavra-passe em claro.
 - Os clientes incluem morada numa única linha, código postal, localidade, distrito e país; a ficha do cliente lista os projetos associados.
 - Folhas independentes para cada combinação de colaborador, semana, cliente e projeto.
 - Cada projeto define as tarifas por hora normal, extra e de domingo, em euros.
@@ -24,14 +26,16 @@ Requisitos: Docker Engine e Docker Compose v2. Na pasta do projeto:
 cp .env.example .env
 ```
 
-Edite `.env`: crie um `SECRET_KEY` único e aleatório, defina palavras-passe fortes e substitua `ALLOWED_HOSTS` pelos nomes DNS/IP efetivos. Para uso apenas local, pode manter `localhost,127.0.0.1`. `POSTGRES_PASSWORD` e `DB_PASSWORD` têm de ser iguais.
+Edite `.env`: crie um `SECRET_KEY` único e aleatório, defina palavras-passe fortes e substitua `ALLOWED_HOSTS` pelos nomes DNS/IP efetivos. Para uso apenas local, pode manter `localhost,127.0.0.1`. `POSTGRES_PASSWORD` e `DB_PASSWORD` têm de ser iguais. Configure `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` e TLS/SSL para o SMTP que enviará convites e redefinições de palavra-passe. Em `DEBUG=True`, quando não há SMTP, as mensagens são escritas na consola para desenvolvimento.
 
 ```sh
 docker compose up --build -d
 docker compose exec web python manage.py createsuperuser
 ```
 
-Abra `http://localhost:8000/conta/entrar/`. O utilizador de `createsuperuser` administra contas em `/admin/`; crie colaboradores e contas para aprovadores aí. Depois, com a conta de administrador, adicione clientes e projetos na aplicação. O email da conta do aprovador tem de coincidir com o email do responsável configurado no respetivo projeto.
+Abra `http://localhost:8000/conta/entrar/`. O utilizador de `createsuperuser` administra contas em `/admin/`; crie contas para aprovadores aí. Depois, com a conta de administrador, adicione clientes, projetos e colaboradores na aplicação. O email da conta do aprovador tem de coincidir com o email do responsável configurado no respetivo projeto.
+
+Os colaboradores são criados e geridos em **Colaboradores** (`/colaboradores/`). Ao criar uma conta, o sistema envia um link temporário de definição da palavra-passe para o email indicado. A página de início de sessão também disponibiliza a recuperação da palavra-passe. Em produção, configure SMTP válido antes de criar colaboradores.
 
 Para parar sem apagar os dados:
 
@@ -44,7 +48,7 @@ Os dados PostgreSQL persistem no volume Docker `postgres_data`; ficheiros estát
 ## Deployment numa VM Debian 13
 
 1. Instale Docker Engine e o plugin Docker Compose v2 a partir do repositório oficial da Docker para Debian. Mantenha o sistema e as imagens atualizados e restrinja o acesso SSH e às portas da VM.
-2. Copie o repositório para a VM, crie `.env` a partir de `.env.example` e configure uma chave Django aleatória, credenciais exclusivas e fortes para PostgreSQL, `DEBUG=False`, `ALLOWED_HOSTS` com o domínio público e `CSRF_TRUSTED_ORIGINS=https://o-seu-dominio`.
+2. Copie o repositório para a VM, crie `.env` a partir de `.env.example` e configure uma chave Django aleatória, credenciais exclusivas e fortes para PostgreSQL, `DEBUG=False`, `ALLOWED_HOSTS` com o domínio público, `CSRF_TRUSTED_ORIGINS=https://o-seu-dominio` e credenciais SMTP/TLS válidas para enviar os links de palavra-passe.
 3. Ative `SECURE_SSL_REDIRECT=True` quando o proxy TLS estiver corretamente configurado. Inicie a aplicação com `docker compose up --build -d` e crie o primeiro administrador com `docker compose exec web python manage.py createsuperuser`. As migrações e a recolha de estáticos são executadas no arranque do serviço web.
 4. Coloque um proxy inverso como Caddy ou Nginx à frente do serviço web, publique apenas as portas 80/443 e configure o certificado TLS/renovação no proxy. Encaminhe o tráfego para a porta interna 8000 e preserve os cabeçalhos `Host` e `X-Forwarded-Proto: https`. A aplicação confia nesse último cabeçalho para detetar HTTPS.
 5. Faça cópias de segurança regulares do volume PostgreSQL (por exemplo, `pg_dump` executado no contentor `db`) e teste a reposição. Proteja o ficheiro `.env`, que contém credenciais, e não o inclua em backups públicos.

@@ -260,3 +260,22 @@ class TimesheetHistory(models.Model):
 
     def __str__(self):
         return f"{self.get_status_display()} — {self.created_at:%d/%m/%Y %H:%M}"
+
+
+class EmployeeProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="employee_profile",
+        verbose_name=_("conta"),
+    )
+    name = models.CharField(_("nome"), max_length=150)
+    position = models.CharField(_("posição"), max_length=120)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = _("perfil de colaborador")
+        verbose_name_plural = _("perfis de colaboradores")
+
+    def __str__(self):
+        return self.name

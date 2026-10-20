@@ -29,6 +29,9 @@ msgstr "Projects"
 msgid "Contas de utilizador"
 msgstr "User accounts"
 
+msgid "Colaboradores"
+msgstr "Employees"
+
 msgid "Sair"
 msgstr "Log out"
 
@@ -121,6 +124,117 @@ msgstr "Add"
 
 msgid "Nome"
 msgstr "Name"
+
+msgid "Posição"
+msgstr "Position"
+
+msgid "Email ou nome de utilizador"
+msgstr "Email or username"
+
+msgid "Email"
+msgstr "Email"
+
+msgid "Adicionar colaborador"
+msgstr "Add employee"
+
+msgid "Ativo"
+msgstr "Active"
+
+msgid "Inativo"
+msgstr "Inactive"
+
+msgid "Desativar"
+msgstr "Deactivate"
+
+msgid "Ativar"
+msgstr "Activate"
+
+msgid "Ainda não existem colaboradores."
+msgstr "There are no employees yet."
+
+msgid "Novo colaborador"
+msgstr "New employee"
+
+msgid "Editar colaborador"
+msgstr "Edit employee"
+
+msgid "Colaborador criado."
+msgstr "Employee created."
+
+msgid "Colaborador criado e ligação segura para definir a palavra-passe enviada por email."
+msgstr "Employee created and a secure password setup link sent by email."
+
+msgid "Configure o SMTP antes de criar colaboradores para poder enviar o convite seguro."
+msgstr "Configure SMTP before creating employees so a secure invitation can be sent."
+
+msgid "O envio de emails não está configurado. Contacte o administrador."
+msgstr "Email delivery is not configured. Contact the administrator."
+
+msgid "Dados do colaborador atualizados."
+msgstr "Employee details updated."
+
+msgid "Conta do colaborador ativada."
+msgstr "Employee account activated."
+
+msgid "Conta do colaborador desativada."
+msgstr "Employee account deactivated."
+
+msgid "Já existe uma conta com este email."
+msgstr "An account with this email already exists."
+
+msgid "O email não pode exceder 150 caracteres porque também será o nome de utilizador."
+msgstr "The email cannot exceed 150 characters because it will also be the username."
+
+msgid "Esqueceu-se da palavra-passe?"
+msgstr "Forgot your password?"
+
+msgid "Redefinir palavra-passe"
+msgstr "Reset password"
+
+msgid "Indique o email associado à sua conta para receber uma ligação segura."
+msgstr "Enter the email associated with your account to receive a secure link."
+
+msgid "Enviar ligação"
+msgstr "Send link"
+
+msgid "Verifique o seu email"
+msgstr "Check your email"
+
+msgid "Se existir uma conta ativa com esse email, receberá instruções para definir uma palavra-passe."
+msgstr "If an active account exists for that email, you will receive password setup instructions."
+
+msgid "Definir palavra-passe"
+msgstr "Set password"
+
+msgid "Guardar palavra-passe"
+msgstr "Save password"
+
+msgid "Esta ligação já foi utilizada ou expirou. Peça uma nova ligação de redefinição."
+msgstr "This link has already been used or has expired. Request a new password reset link."
+
+msgid "Pedir nova ligação"
+msgstr "Request a new link"
+
+msgid "Palavra-passe definida"
+msgstr "Password set"
+
+msgid "A palavra-passe foi atualizada. Já pode iniciar sessão."
+msgstr "Your password has been updated. You can now sign in."
+
+msgid "Foi criada uma conta de colaborador para este endereço. Para definir a sua palavra-passe, abra a ligação abaixo:"
+msgstr "An employee account has been created for this address. To set your password, open the link below:"
+
+msgid "Depois, inicie sessão usando %(email)s como email/nome de utilizador."
+msgstr "Then sign in using %(email)s as your email/username."
+
+msgid "Se não pediu esta conta, ignore este email."
+msgstr "If you did not request this account, ignore this email."
+
+msgid "Defina a palavra-passe da sua conta"
+msgstr "Set your account password"
+
+msgid "A conta será criada com uma credencial aleatória não partilhada. Será enviado um link seguro e temporário para o colaborador definir a palavra-passe."
+msgstr "The account will be created with a private random credential. A secure, temporary link will be emailed to the employee to set their password."
 
 msgid "Detalhes"
 msgstr "Details"
