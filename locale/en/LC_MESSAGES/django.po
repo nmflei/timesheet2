@@ -38,6 +38,12 @@ msgstr "Language"
 msgid "Aplicar"
 msgstr "Apply"
 
+msgid "Mudar idioma para Português (Portugal)"
+msgstr "Switch language to Portuguese (Portugal)"
+
+msgid "Mudar idioma para inglês"
+msgstr "Switch language to English"
+
 msgid "Entrar"
 msgstr "Log in"
 

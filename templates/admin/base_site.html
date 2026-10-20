@@ -7,12 +7,17 @@
   <form method="post" action="{% url 'set_language' %}" class="language-form" aria-label="{% trans 'Idioma' %}">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    {% if LANGUAGE_CODE == "en" %}
     <button class="language-flag" type="submit" name="language" value="pt-pt"
-            aria-label="Português (Portugal)" title="Português (Portugal)"
-            aria-pressed="{% if LANGUAGE_CODE == 'pt-pt' %}true{% else %}false{% endif %}">🇵🇹</button>
+            aria-label="{% trans 'Mudar idioma para Português (Portugal)' %}" title="{% trans 'Mudar idioma para Português (Portugal)' %}">
+      <span>PT</span><span aria-hidden="true">🇵🇹</span>
+    </button>
+    {% else %}
     <button class="language-flag" type="submit" name="language" value="en"
-            aria-label="English" title="English"
-            aria-pressed="{% if LANGUAGE_CODE == 'en' %}true{% else %}false{% endif %}">🇬🇧</button>
+            aria-label="{% trans 'Mudar idioma para inglês' %}" title="{% trans 'Mudar idioma para inglês' %}">
+      <span>GB</span><span aria-hidden="true">🇬🇧</span>
+    </button>
+    {% endif %}
   </form>
 </div>
 {% endblock %}
