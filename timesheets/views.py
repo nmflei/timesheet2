@@ -218,13 +218,14 @@ def timesheet_review(request, pk):
 def client_list(request):
     if not is_manager(request.user):
         raise PermissionDenied
-    return render(request, "timesheets/management_list.html", {
-        "title": _("Clientes"),
-        "objects": Client.objects.prefetch_related("projects"),
-        "create_url": "client_create",
-        "edit_url": "client_edit",
-        "object_label": _("cliente"),
-    })
+    return render(
+        request,
+        "timesheets/client_list.html",
+        {
+            "clients": Client.objects.prefetch_related("projects"),
+            "title": _("Clientes"),
+        },
+    )
 
 
 @login_required

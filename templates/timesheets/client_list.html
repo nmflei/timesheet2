@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <h1>{{ title }}</h1>
+  <a class="button primary" href="{% url 'client_create' %}">{% trans "Adicionar" %} {% trans "cliente" %}</a>
+</div>
+{% for client in clients %}
+<section class="panel client-card">
+  <div class="page-heading">
+    <h2><a href="{% url 'client_detail' client.pk %}">{{ client.company_name }}</a></h2>
+    <a class="button secondary small" href="{% url 'client_edit' client.pk %}">{% trans "Editar" %}</a>
+  </div>
+  <p><strong>{% trans "NIF" %}:</strong> {{ client.tax_number }} · {{ client.contact_name }} · {{ client.email }}</p>
+  <p>
+    {{ client.address }}
+    {% if client.postal_code %} · {{ client.postal_code }}{% endif %}
+    {% if client.locality %} {{ client.locality }}{% endif %}
+    {% if client.district %} · {{ client.district }}{% endif %}
+    {% if client.country %} · {{ client.country }}{% endif %}
+  </p>
+  <div class="associated-projects">
+    <h3>{% trans "Projetos associados" %}</h3>
+    {% with projects=client.projects.all %}
+      {% if projects %}
+      <ul class="associated-project-list">
+        {% for project in projects %}
+        <li>
+          <a href="{% url 'project_edit' project.pk %}">{{ project.name }}</a>
+          <span class="muted">· {{ project.location }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="empty">{% trans "Este cliente ainda não tem projetos associados." %}</p>
+      {% endif %}
+    {% endwith %}
+  </div>
+</section>
+{% empty %}
+<section class="panel"><p class="empty">{% trans "Ainda não existem registos." %}</p></section>
+{% endfor %}
+{% endblock %}

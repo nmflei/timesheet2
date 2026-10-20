@@ -247,6 +247,7 @@ class ClientManagementTests(TestCase):
 
     def test_client_list_visibly_renders_associated_project_names_in_portuguese(self):
         response = self.client.get(reverse("client_list"))
+        self.assertTemplateUsed(response, "timesheets/client_list.html")
         self.assertContains(response, "Projetos associados")
         self.assertContains(response, "Projeto Lisboa")
         self.assertContains(response, 'class="associated-project-list"')
@@ -255,9 +256,23 @@ class ClientManagementTests(TestCase):
     def test_client_list_visibly_renders_associated_project_names_in_english(self):
         self.client.cookies["timesheet_language"] = "en"
         response = self.client.get(reverse("client_list"))
+        self.assertTemplateUsed(response, "timesheets/client_list.html")
         self.assertContains(response, "Associated projects")
         self.assertContains(response, "Projeto Lisboa")
         self.assertContains(response, 'class="associated-project-list"')
+
+    def test_client_list_shows_empty_project_state_per_client(self):
+        client_without_projects = Client.objects.create(
+            company_name="Sem projetos",
+            address="Rua Nova, 1",
+            tax_number="509876544",
+            contact_name="Contacto",
+            email="contacto@example.pt",
+        )
+        response = self.client.get(reverse("client_list"))
+        self.assertContains(response, "Projeto Lisboa")
+        self.assertContains(response, "Este cliente ainda não tem projetos associados.")
+        self.assertContains(response, client_without_projects.company_name)
 
     def test_client_detail_shows_empty_projects_message(self):
         client_without_projects = Client.objects.create(
