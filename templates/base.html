@@ -23,15 +23,15 @@
       <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="link-button" type="submit">{% trans "Sair" %}</button></form>
     </nav>
     {% endif %}
-    <form method="post" action="{% url 'set_language' %}" class="language-form">
+    <form method="post" action="{% url 'set_language' %}" class="language-form" aria-label="{% trans 'Idioma' %}">
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ request.get_full_path }}">
-      <label for="language-select">{% trans "Idioma" %}</label>
-      <select id="language-select" name="language" onchange="this.form.submit()">
-        <option value="pt-pt" {% if LANGUAGE_CODE == "pt-pt" %}selected{% endif %}>Português</option>
-        <option value="en" {% if LANGUAGE_CODE == "en" %}selected{% endif %}>English</option>
-      </select>
-      <button class="language-submit" type="submit">{% trans "Aplicar" %}</button>
+      <button class="language-flag" type="submit" name="language" value="pt-pt"
+              aria-label="Português (Portugal)" title="Português (Portugal)"
+              aria-pressed="{% if LANGUAGE_CODE == 'pt-pt' %}true{% else %}false{% endif %}">🇵🇹</button>
+      <button class="language-flag" type="submit" name="language" value="en"
+              aria-label="English" title="English"
+              aria-pressed="{% if LANGUAGE_CODE == 'en' %}true{% else %}false{% endif %}">🇬🇧</button>
     </form>
   </header>
   <main class="container">

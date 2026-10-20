@@ -323,7 +323,12 @@ class LanguagePreferenceTests(TestCase):
         response = self.client.get(reverse("dashboard"))
         self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "en")
         self.assertContains(response, "Weekly timesheets")
-        self.assertContains(response, "Language")
+        self.assertContains(response, 'aria-label="Language"')
+        self.assertContains(response, 'aria-label="Português (Portugal)"')
+        self.assertContains(response, 'aria-label="English"')
+        self.assertContains(response, "🇵🇹")
+        self.assertContains(response, "🇬🇧")
+        self.assertNotContains(response, "<option")
 
     def test_language_preference_survives_a_new_session(self):
         self.user.language_preference.language = "en"
@@ -344,6 +349,11 @@ class LanguagePreferenceTests(TestCase):
         response = self.client.get(reverse("login"))
         self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "en")
         self.assertContains(response, "Log in")
+        self.assertContains(response, 'aria-label="Language"')
+        self.assertContains(response, 'aria-label="Português (Portugal)"')
+        self.assertContains(response, 'aria-label="English"')
+        self.assertContains(response, "🇵🇹")
+        self.assertContains(response, "🇬🇧")
 
     def test_invalid_language_is_rejected(self):
         self.client.force_login(self.user)
@@ -360,8 +370,11 @@ class LanguagePreferenceTests(TestCase):
         self.client.force_login(admin)
         response = self.client.get(reverse("admin:index"))
         self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "en")
-        self.assertContains(response, "Language")
-        self.assertContains(response, "Apply")
+        self.assertContains(response, 'aria-label="Language"')
+        self.assertContains(response, 'aria-label="Português (Portugal)"')
+        self.assertContains(response, 'aria-label="English"')
+        self.assertContains(response, "🇵🇹")
+        self.assertContains(response, "🇬🇧")
         self.assertContains(response, "Site administration")
 
     def test_admin_login_is_localized_in_portuguese_and_has_language_selector(self):
@@ -370,8 +383,12 @@ class LanguagePreferenceTests(TestCase):
         self.assertContains(response, "Utilizador:")
         self.assertContains(response, "Palavra-passe:")
         self.assertContains(response, "Entrar")
-        self.assertContains(response, "Idioma")
-        self.assertContains(response, "Aplicar")
+        self.assertContains(response, 'aria-label="Idioma"')
+        self.assertContains(response, 'aria-label="Português (Portugal)"')
+        self.assertContains(response, 'aria-label="English"')
+        self.assertContains(response, "🇵🇹")
+        self.assertContains(response, "🇬🇧")
+        self.assertNotContains(response, "<option")
         admin = get_user_model().objects.create_superuser(
             username="admin-portugues", password="safe-password", email="admin-pt@example.pt"
         )

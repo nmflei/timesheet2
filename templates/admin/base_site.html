@@ -4,15 +4,15 @@
 {% block branding %}
 <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
   <h1 id="site-name"><a href="{% url 'admin:index' %}">{% trans "Folhas de horas" %}</a></h1>
-  <form method="post" action="{% url 'set_language' %}">
+  <form method="post" action="{% url 'set_language' %}" class="language-form" aria-label="{% trans 'Idioma' %}">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ request.get_full_path }}">
-    <label for="admin-language-select">{% trans "Idioma" %}</label>
-    <select id="admin-language-select" name="language">
-      <option value="pt-pt" {% if LANGUAGE_CODE == "pt-pt" %}selected{% endif %}>Português</option>
-      <option value="en" {% if LANGUAGE_CODE == "en" %}selected{% endif %}>English</option>
-    </select>
-    <button type="submit">{% trans "Aplicar" %}</button>
+    <button class="language-flag" type="submit" name="language" value="pt-pt"
+            aria-label="Português (Portugal)" title="Português (Portugal)"
+            aria-pressed="{% if LANGUAGE_CODE == 'pt-pt' %}true{% else %}false{% endif %}">🇵🇹</button>
+    <button class="language-flag" type="submit" name="language" value="en"
+            aria-label="English" title="English"
+            aria-pressed="{% if LANGUAGE_CODE == 'en' %}true{% else %}false{% endif %}">🇬🇧</button>
   </form>
 </div>
 {% endblock %}
