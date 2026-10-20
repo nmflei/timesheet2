@@ -29,12 +29,12 @@
       {% if LANGUAGE_CODE == "en" %}
       <button class="language-flag" type="submit" name="language" value="pt-pt"
               aria-label="{% trans 'Mudar idioma para Português (Portugal)' %}" title="{% trans 'Mudar idioma para Português (Portugal)' %}">
-        <span>PT</span><span aria-hidden="true">🇵🇹</span>
+        <span class="language-code">PT</span><span class="language-flag-icon" aria-hidden="true">🇵🇹</span>
       </button>
       {% else %}
       <button class="language-flag" type="submit" name="language" value="en"
               aria-label="{% trans 'Mudar idioma para inglês' %}" title="{% trans 'Mudar idioma para inglês' %}">
-        <span>GB</span><span aria-hidden="true">🇬🇧</span>
+        <span class="language-code">GB</span><span class="language-flag-icon" aria-hidden="true">🇬🇧</span>
       </button>
       {% endif %}
     </form>

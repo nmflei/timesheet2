@@ -1,6 +1,36 @@
 {% extends "admin/base.html" %}
 {% load i18n %}
 
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    .language-flag {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      min-width: 42px;
+      min-height: 42px;
+      padding: 3px 6px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      background: transparent;
+      color: inherit;
+      font: 600 .72rem/1 system-ui, sans-serif;
+      cursor: pointer;
+    }
+    .language-code,
+    .language-flag-icon {
+      display: block;
+    }
+    .language-flag-icon {
+      font-size: 1.2rem;
+      line-height: 1.1;
+    }
+  </style>
+{% endblock %}
+
 {% block branding %}
 <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
   <h1 id="site-name"><a href="{% url 'admin:index' %}">{% trans "Folhas de horas" %}</a></h1>
@@ -10,12 +40,12 @@
     {% if LANGUAGE_CODE == "en" %}
     <button class="language-flag" type="submit" name="language" value="pt-pt"
             aria-label="{% trans 'Mudar idioma para Português (Portugal)' %}" title="{% trans 'Mudar idioma para Português (Portugal)' %}">
-      <span>PT</span><span aria-hidden="true">🇵🇹</span>
+      <span class="language-code">PT</span><span class="language-flag-icon" aria-hidden="true">🇵🇹</span>
     </button>
     {% else %}
     <button class="language-flag" type="submit" name="language" value="en"
             aria-label="{% trans 'Mudar idioma para inglês' %}" title="{% trans 'Mudar idioma para inglês' %}">
-      <span>GB</span><span aria-hidden="true">🇬🇧</span>
+      <span class="language-code">GB</span><span class="language-flag-icon" aria-hidden="true">🇬🇧</span>
     </button>
     {% endif %}
   </form>

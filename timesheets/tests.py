@@ -328,6 +328,10 @@ class LanguagePreferenceTests(TestCase):
         self.assertContains(response, "🇵🇹")
         self.assertNotContains(response, "🇬🇧")
         self.assertEqual(response.content.count(b'class="language-flag"'), 1)
+        self.assertRegex(
+            response.content.decode(),
+            r'class="language-code">PT</span><span class="language-flag-icon" aria-hidden="true">🇵🇹</span>',
+        )
         self.assertNotContains(response, "<option")
 
     def test_language_preference_survives_a_new_session(self):
@@ -354,6 +358,10 @@ class LanguagePreferenceTests(TestCase):
         self.assertContains(response, "🇵🇹")
         self.assertNotContains(response, "🇬🇧")
         self.assertEqual(response.content.count(b'class="language-flag"'), 1)
+        self.assertRegex(
+            response.content.decode(),
+            r'class="language-code">PT</span><span class="language-flag-icon" aria-hidden="true">🇵🇹</span>',
+        )
 
     def test_invalid_language_is_rejected(self):
         self.client.force_login(self.user)
@@ -389,6 +397,10 @@ class LanguagePreferenceTests(TestCase):
         self.assertContains(response, "🇬🇧")
         self.assertNotContains(response, "🇵🇹")
         self.assertEqual(response.content.count(b'class="language-flag"'), 1)
+        self.assertRegex(
+            response.content.decode(),
+            r'class="language-code">GB</span><span class="language-flag-icon" aria-hidden="true">🇬🇧</span>',
+        )
         self.assertNotContains(response, "<option")
         admin = get_user_model().objects.create_superuser(
             username="admin-portugues", password="safe-password", email="admin-pt@example.pt"
@@ -401,6 +413,10 @@ class LanguagePreferenceTests(TestCase):
         self.assertContains(response, "🇬🇧")
         self.assertNotContains(response, "🇵🇹")
         self.assertEqual(response.content.count(b'class="language-flag"'), 1)
+        self.assertRegex(
+            response.content.decode(),
+            r'class="language-code">GB</span><span class="language-flag-icon" aria-hidden="true">🇬🇧</span>',
+        )
 
     def test_portuguese_dashboard_shows_only_the_english_switch(self):
         self.client.force_login(self.user)
@@ -411,6 +427,10 @@ class LanguagePreferenceTests(TestCase):
         self.assertContains(response, "🇬🇧")
         self.assertNotContains(response, "🇵🇹")
         self.assertEqual(response.content.count(b'class="language-flag"'), 1)
+        self.assertRegex(
+            response.content.decode(),
+            r'class="language-code">GB</span><span class="language-flag-icon" aria-hidden="true">🇬🇧</span>',
+        )
 
     def test_model_validation_error_is_translated(self):
         client_record = Client.objects.create(
