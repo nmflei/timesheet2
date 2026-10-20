@@ -1,6 +1,7 @@
 from datetime import date, time
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -241,9 +242,11 @@ class TimesheetWorkflowTests(TestCase):
         self.assertEqual(self.sheet.history.latest("created_at").note, "Indique a tarefa realizada.")
 
     def test_timesheet_status_and_details_follow_approver_language(self):
-        self.approver.language_preference.language = "en"
-        self.approver.language_preference.save(update_fields=["language"])
         self.client.force_login(self.approver)
+        self.client.post(
+            reverse("set_language"),
+            {"language": "en", "next": reverse("timesheet_detail", args=[self.sheet.pk])},
+        )
         response = self.client.get(reverse("timesheet_detail", args=[self.sheet.pk]))
         self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "en")
         self.assertContains(response, "Submitted")
@@ -301,24 +304,29 @@ class TimesheetWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 403)
 
 
-class LanguagePreferenceTests(TestCase):
+class LanguageSelectionTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(
             username="language-user", password="safe-password", email="language@example.pt"
         )
 
-    def test_new_user_defaults_to_portuguese(self):
-        self.assertEqual(self.user.language_preference.language, "pt-pt")
+    def test_authenticated_user_defaults_to_portuguese(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "pt-pt")
 
-    def test_authenticated_language_choice_is_saved_and_used_on_following_requests(self):
+    def test_authenticated_language_choice_is_temporary_for_current_browser_session(self):
         self.client.force_login(self.user)
         response = self.client.post(
             reverse("set_language"),
             {"language": "en", "next": reverse("dashboard")},
         )
         self.assertRedirects(response, reverse("dashboard"))
-        self.user.language_preference.refresh_from_db()
-        self.assertEqual(self.user.language_preference.language, "en")
+        language_cookie = response.cookies["timesheet_language"]
+        self.assertEqual(language_cookie.value, "en")
+        self.assertEqual(language_cookie["max-age"], "")
+        self.assertEqual(language_cookie["expires"], "")
+        self.assertEqual(response.cookies[settings.LANGUAGE_COOKIE_NAME]["max-age"], 0)
 
         response = self.client.get(reverse("dashboard"))
         self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "en")
@@ -338,22 +346,25 @@ class LanguagePreferenceTests(TestCase):
         self.assertContains(response, "/static/timesheets/style.css")
         self.assertNotContains(response, "<option")
 
-    def test_language_preference_survives_a_new_session(self):
-        self.user.language_preference.language = "en"
-        self.user.language_preference.save(update_fields=["language"])
+    def test_language_choice_does_not_carry_over_to_a_new_browser_session(self):
         another_session = self.client_class()
         another_session.force_login(self.user)
+        another_session.cookies[settings.LANGUAGE_COOKIE_NAME] = "en"
         response = another_session.get(reverse("login"))
-        self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "en")
-        self.assertContains(response, "Log in")
-        self.assertContains(response, "Use the account created by the administrator.")
+        self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "pt-pt")
+        self.assertContains(response, "Entrar")
+        self.assertEqual(response.cookies[settings.LANGUAGE_COOKIE_NAME]["max-age"], 0)
 
-    def test_anonymous_language_choice_is_kept_in_cookie(self):
+    def test_anonymous_language_choice_uses_a_session_only_cookie(self):
         response = self.client.post(
             reverse("set_language"),
             {"language": "en", "next": reverse("login")},
         )
         self.assertRedirects(response, reverse("login"))
+        language_cookie = response.cookies["timesheet_language"]
+        self.assertEqual(language_cookie["max-age"], "")
+        self.assertEqual(language_cookie["expires"], "")
+        self.assertEqual(response.cookies[settings.LANGUAGE_COOKIE_NAME]["max-age"], 0)
         response = self.client.get(reverse("login"))
         self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "en")
         self.assertContains(response, "Log in")
@@ -372,17 +383,19 @@ class LanguagePreferenceTests(TestCase):
 
     def test_invalid_language_is_rejected(self):
         self.client.force_login(self.user)
-        self.client.post(reverse("set_language"), {"language": "fr", "next": "/"})
-        self.user.language_preference.refresh_from_db()
-        self.assertEqual(self.user.language_preference.language, "pt-pt")
+        response = self.client.post(reverse("set_language"), {"language": "fr", "next": "/"})
+        self.assertNotIn("timesheet_language", response.cookies)
+        self.assertEqual(self.client.get(reverse("dashboard")).wsgi_request.LANGUAGE_CODE, "pt-pt")
 
-    def test_admin_uses_saved_language_and_shows_language_selector(self):
+    def test_admin_uses_session_language_and_shows_language_selector(self):
         admin = get_user_model().objects.create_superuser(
             username="admin-language", password="safe-password", email="admin@example.pt"
         )
-        admin.language_preference.language = "en"
-        admin.language_preference.save(update_fields=["language"])
         self.client.force_login(admin)
+        self.client.post(
+            reverse("set_language"),
+            {"language": "en", "next": reverse("admin:index")},
+        )
         response = self.client.get(reverse("admin:index"))
         self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "en")
         self.assertContains(response, 'aria-label="Language"')
@@ -420,6 +433,10 @@ class LanguagePreferenceTests(TestCase):
             username="admin-portugues", password="safe-password", email="admin-pt@example.pt"
         )
         self.client.force_login(admin)
+        self.client.post(
+            reverse("set_language"),
+            {"language": "pt-pt", "next": reverse("admin:index")},
+        )
         response = self.client.get(reverse("admin:index"))
         self.assertContains(response, "Administração do site")
         self.assertContains(response, 'aria-label="Mudar idioma para inglês"')
@@ -474,7 +491,8 @@ class LanguagePreferenceTests(TestCase):
                     client=client_record,
                     project=project,
                 ).full_clean()
+            messages = [str(message) for message in error.exception.message_dict["week_start"]]
         self.assertIn(
             "The week must start on a Monday.",
-            error.exception.message_dict["week_start"],
+            messages,
         )

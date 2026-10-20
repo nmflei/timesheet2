@@ -2,19 +2,21 @@ from django.conf import settings
 from django.middleware.locale import LocaleMiddleware
 from django.utils import translation
 
-from .models import UserLanguagePreference
 
-
-class UserPreferenceLocaleMiddleware(LocaleMiddleware):
+class SessionLocaleMiddleware(LocaleMiddleware):
     def process_request(self, request):
-        if request.user.is_authenticated:
-            try:
-                preference = request.user.language_preference
-            except UserLanguagePreference.DoesNotExist:
-                preference = None
-            if preference and preference.language in dict(settings.LANGUAGES):
-                language = preference.language
-                translation.activate(language)
-                request.LANGUAGE_CODE = language
-                return
-        super().process_request(request)
+        language = request.COOKIES.get(settings.SESSION_LANGUAGE_COOKIE_NAME)
+        if language not in dict(settings.LANGUAGES):
+            language = settings.LANGUAGE_CODE
+        translation.activate(language)
+        request.LANGUAGE_CODE = language
+
+    def process_response(self, request, response):
+        response = super().process_response(request, response)
+        if settings.LANGUAGE_COOKIE_NAME in request.COOKIES:
+            response.delete_cookie(
+                settings.LANGUAGE_COOKIE_NAME,
+                path=settings.LANGUAGE_COOKIE_PATH,
+                domain=settings.LANGUAGE_COOKIE_DOMAIN,
+            )
+        return response

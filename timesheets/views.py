@@ -35,17 +35,12 @@ def can_review(user, timesheet):
 
 
 @require_POST
-def set_language_preference(request):
+def set_language(request):
     language = request.POST.get("language")
     available_languages = dict(settings.LANGUAGES)
     if language not in available_languages:
         messages.error(request, _("Selecione um idioma válido."))
         return redirect("dashboard" if request.user.is_authenticated else "login")
-
-    if request.user.is_authenticated:
-        preference = request.user.language_preference
-        preference.language = language
-        preference.save(update_fields=["language"])
 
     translation.activate(language)
     request.LANGUAGE_CODE = language
@@ -59,14 +54,18 @@ def set_language_preference(request):
         else "/"
     )
     response.set_cookie(
-        settings.LANGUAGE_COOKIE_NAME,
+        settings.SESSION_LANGUAGE_COOKIE_NAME,
         language,
-        max_age=settings.LANGUAGE_COOKIE_AGE,
+        path=settings.SESSION_COOKIE_PATH,
+        domain=settings.SESSION_COOKIE_DOMAIN,
+        secure=settings.SESSION_COOKIE_SECURE,
+        httponly=True,
+        samesite=settings.SESSION_COOKIE_SAMESITE,
+    )
+    response.delete_cookie(
+        settings.LANGUAGE_COOKIE_NAME,
         path=settings.LANGUAGE_COOKIE_PATH,
         domain=settings.LANGUAGE_COOKIE_DOMAIN,
-        secure=settings.LANGUAGE_COOKIE_SECURE,
-        httponly=settings.LANGUAGE_COOKIE_HTTPONLY,
-        samesite=settings.LANGUAGE_COOKIE_SAMESITE,
     )
     return response
 

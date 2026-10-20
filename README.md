@@ -9,7 +9,7 @@ MVP Django para registo de horas por colaborador, semana, cliente e projeto, com
 - Cada projeto define as tarifas por hora normal, extra e de domingo, em euros.
 - Registo diário de segunda-feira a domingo; até 8 horas por dia útil são normais, o excedente e todas as horas de sábado são extra. As horas de domingo usam exclusivamente a tarifa de domingo e não acumulam com a tarifa extra.
 - A folha apresenta horas e valores por categoria, por dia e no total semanal; os valores são arredondados aos cêntimos por categoria e dia.
-- A interface pode ser utilizada em português de Portugal ou inglês. O cabeçalho apresenta apenas o idioma alternativo ao atual: “PT” com a bandeira portuguesa em inglês, ou “GB” com a bandeira britânica em português (também no login e na administração). Cada utilizador autenticado pode escolher o idioma; a preferência fica guardada na conta. Sem preferência, usa-se português de Portugal. A escolha também é memorizada num cookie para utilizadores não autenticados.
+- A interface pode ser utilizada em português de Portugal ou inglês. O cabeçalho apresenta apenas o idioma alternativo ao atual: “PT” com a bandeira portuguesa em inglês, ou “GB” com a bandeira britânica em português (também no login e na administração). A escolha do idioma dura apenas a sessão atual do navegador; não é guardada na conta nem em cookies persistentes. Sem escolha na sessão, usa-se português de Portugal.
 - Existe um controlo global de tema claro/escuro em todas as páginas, incluindo login e administração. A escolha fica guardada neste navegador.
 - Submissão, aprovação ou devolução com nota e histórico de estados.
 - O aprovador acede com uma conta cujo email corresponde ao email configurado no projeto; administradores podem consultar todas as folhas.

@@ -1,7 +1,4 @@
 from django.contrib import admin
-from django.contrib.auth import get_user_model
-from django.contrib.auth.admin import UserAdmin
-from django.utils.translation import gettext_lazy as _
 
 from .models import (
     Client,
@@ -9,23 +6,7 @@ from .models import (
     Project,
     Timesheet,
     TimesheetHistory,
-    UserLanguagePreference,
 )
-
-
-class UserLanguagePreferenceInline(admin.StackedInline):
-    model = UserLanguagePreference
-    can_delete = False
-    extra = 0
-    verbose_name = _("preferência de idioma")
-
-
-admin.site.unregister(get_user_model())
-
-
-@admin.register(get_user_model())
-class CustomUserAdmin(UserAdmin):
-    inlines = [UserLanguagePreferenceInline]
 
 
 @admin.register(Client)
@@ -68,10 +49,3 @@ class TimesheetAdmin(admin.ModelAdmin):
 class TimesheetHistoryAdmin(admin.ModelAdmin):
     list_display = ("timesheet", "actor", "status", "created_at")
     readonly_fields = ("timesheet", "actor", "status", "note", "created_at")
-
-
-@admin.register(UserLanguagePreference)
-class UserLanguagePreferenceAdmin(admin.ModelAdmin):
-    list_display = ("user", "language")
-    list_filter = ("language",)
-    search_fields = ("user__username", "user__email")

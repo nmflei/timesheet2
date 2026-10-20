@@ -254,30 +254,5 @@ class TimesheetHistory(models.Model):
         verbose_name_plural = _("histórico de estados")
 
 
-class UserLanguagePreference(models.Model):
-    class Language(models.TextChoices):
-        PORTUGUESE = "pt-pt", _("Português (Portugal)")
-        ENGLISH = "en", _("English")
-
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="language_preference",
-        verbose_name=_("utilizador"),
-    )
-    language = models.CharField(
-        _("idioma"),
-        max_length=5,
-        choices=Language.choices,
-        default=Language.PORTUGUESE,
-    )
-
-    class Meta:
-        verbose_name = _("preferência de idioma")
-        verbose_name_plural = _("preferências de idioma")
-
-    def __str__(self):
-        return f"{self.user} — {self.get_language_display()}"
-
     def __str__(self):
         return f"{self.get_status_display()} — {self.created_at:%d/%m/%Y %H:%M}"

@@ -4,7 +4,7 @@ from . import views
 
 
 urlpatterns = [
-    path("idioma/", views.set_language_preference, name="set_language"),
+    path("idioma/", views.set_language, name="set_language"),
     path("", views.dashboard, name="dashboard"),
     path("clientes/", views.client_list, name="client_list"),
     path("clientes/novo/", views.client_create, name="client_create"),

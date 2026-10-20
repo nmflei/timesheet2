@@ -39,7 +39,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "timesheets.middleware.UserPreferenceLocaleMiddleware",
+    "timesheets.middleware.SessionLocaleMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -84,6 +84,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "pt-pt"
+SESSION_LANGUAGE_COOKIE_NAME = "timesheet_language"
 LANGUAGES = [
     ("pt-pt", "Português (Portugal)"),
     ("en", "English"),
