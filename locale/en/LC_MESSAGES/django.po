@@ -44,6 +44,12 @@ msgstr "Switch language to Portuguese (Portugal)"
 msgid "Mudar idioma para inglês"
 msgstr "Switch language to English"
 
+msgid "Ativar modo escuro"
+msgstr "Enable dark mode"
+
+msgid "Ativar modo claro"
+msgstr "Enable light mode"
+
 msgid "Entrar"
 msgstr "Log in"
 

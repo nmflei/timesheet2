@@ -5,6 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{% trans "Folhas de horas" %}{% endblock %} · {% trans "Folhas de horas" %}</title>
+  <script src="{% static 'timesheets/theme.js' %}"></script>
   <link rel="stylesheet" href="{% static 'timesheets/style.css' %}">
 </head>
 <body>
@@ -29,15 +30,23 @@
       {% if LANGUAGE_CODE == "en" %}
       <button class="language-flag" type="submit" name="language" value="pt-pt"
               aria-label="{% trans 'Mudar idioma para Português (Portugal)' %}" title="{% trans 'Mudar idioma para Português (Portugal)' %}">
-        <span class="language-code">PT</span><span class="language-flag-icon" aria-hidden="true">🇵🇹</span>
+        <span class="language-code">PT</span>
+        <img class="language-flag-icon" src="{% static 'timesheets/flags/portugal.svg' %}" alt="" aria-hidden="true">
       </button>
       {% else %}
       <button class="language-flag" type="submit" name="language" value="en"
               aria-label="{% trans 'Mudar idioma para inglês' %}" title="{% trans 'Mudar idioma para inglês' %}">
-        <span class="language-code">GB</span><span class="language-flag-icon" aria-hidden="true">🇬🇧</span>
+        <span class="language-code">GB</span>
+        <img class="language-flag-icon" src="{% static 'timesheets/flags/united-kingdom.svg' %}" alt="" aria-hidden="true">
       </button>
       {% endif %}
     </form>
+    <button class="site-theme-toggle" type="button" data-theme-toggle aria-pressed="false"
+            data-dark-label="{% trans 'Ativar modo escuro' %}"
+            data-light-label="{% trans 'Ativar modo claro' %}"
+            aria-label="{% trans 'Ativar modo escuro' %}" title="{% trans 'Ativar modo escuro' %}">
+      <span data-theme-icon aria-hidden="true">☾</span>
+    </button>
   </header>
   <main class="container">
     {% for message in messages %}<div class="message {{ message.tags }}">{{ message }}</div>{% endfor %}

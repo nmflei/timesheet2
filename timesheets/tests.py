@@ -325,13 +325,17 @@ class LanguagePreferenceTests(TestCase):
         self.assertContains(response, "Weekly timesheets")
         self.assertContains(response, 'aria-label="Language"')
         self.assertContains(response, 'aria-label="Switch language to Portuguese (Portugal)"')
-        self.assertContains(response, "🇵🇹")
-        self.assertNotContains(response, "🇬🇧")
+        self.assertContains(response, "portugal.svg")
+        self.assertNotContains(response, "united-kingdom.svg")
         self.assertEqual(response.content.count(b'class="language-flag"'), 1)
         self.assertRegex(
             response.content.decode(),
-            r'class="language-code">PT</span><span class="language-flag-icon" aria-hidden="true">🇵🇹</span>',
+            r'class="language-code">PT</span>\s*<img class="language-flag-icon" src="[^"]*portugal\.svg"',
         )
+        self.assertContains(response, 'data-theme-toggle')
+        self.assertContains(response, 'data-dark-label="Enable dark mode"')
+        self.assertContains(response, "/static/timesheets/theme.js")
+        self.assertContains(response, "/static/timesheets/style.css")
         self.assertNotContains(response, "<option")
 
     def test_language_preference_survives_a_new_session(self):
@@ -355,13 +359,16 @@ class LanguagePreferenceTests(TestCase):
         self.assertContains(response, "Log in")
         self.assertContains(response, 'aria-label="Language"')
         self.assertContains(response, 'aria-label="Switch language to Portuguese (Portugal)"')
-        self.assertContains(response, "🇵🇹")
-        self.assertNotContains(response, "🇬🇧")
+        self.assertContains(response, "portugal.svg")
+        self.assertNotContains(response, "united-kingdom.svg")
         self.assertEqual(response.content.count(b'class="language-flag"'), 1)
         self.assertRegex(
             response.content.decode(),
-            r'class="language-code">PT</span><span class="language-flag-icon" aria-hidden="true">🇵🇹</span>',
+            r'class="language-code">PT</span>\s*<img class="language-flag-icon" src="[^"]*portugal\.svg"',
         )
+        self.assertContains(response, 'data-theme-toggle')
+        self.assertContains(response, "/static/timesheets/theme.js")
+        self.assertContains(response, "/static/timesheets/style.css")
 
     def test_invalid_language_is_rejected(self):
         self.client.force_login(self.user)
@@ -380,10 +387,13 @@ class LanguagePreferenceTests(TestCase):
         self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "en")
         self.assertContains(response, 'aria-label="Language"')
         self.assertContains(response, 'aria-label="Switch language to Portuguese (Portugal)"')
-        self.assertContains(response, "🇵🇹")
-        self.assertNotContains(response, "🇬🇧")
+        self.assertContains(response, "portugal.svg")
+        self.assertNotContains(response, "united-kingdom.svg")
         self.assertEqual(response.content.count(b'class="language-flag"'), 1)
         self.assertContains(response, "Site administration")
+        self.assertContains(response, 'data-theme-toggle')
+        self.assertContains(response, 'data-dark-label="Enable dark mode"')
+        self.assertContains(response, "/static/timesheets/theme.js")
 
     def test_admin_login_is_localized_in_portuguese_and_has_language_selector(self):
         response = self.client.get(reverse("admin:login"))
@@ -394,13 +404,17 @@ class LanguagePreferenceTests(TestCase):
         self.assertContains(response, 'aria-label="Idioma"')
         self.assertContains(response, 'aria-label="Mudar idioma para inglês"')
         self.assertContains(response, ">GB<")
-        self.assertContains(response, "🇬🇧")
-        self.assertNotContains(response, "🇵🇹")
+        self.assertContains(response, "united-kingdom.svg")
+        self.assertNotContains(response, "portugal.svg")
         self.assertEqual(response.content.count(b'class="language-flag"'), 1)
         self.assertRegex(
             response.content.decode(),
-            r'class="language-code">GB</span><span class="language-flag-icon" aria-hidden="true">🇬🇧</span>',
+            r'class="language-code">GB</span>\s*<img class="language-flag-icon" src="[^"]*united-kingdom\.svg"',
         )
+        self.assertContains(response, 'data-theme-toggle')
+        self.assertContains(response, 'data-dark-label="Ativar modo escuro"')
+        self.assertContains(response, 'class="site-theme-toggle"')
+        self.assertContains(response, "/static/timesheets/theme.js")
         self.assertNotContains(response, "<option")
         admin = get_user_model().objects.create_superuser(
             username="admin-portugues", password="safe-password", email="admin-pt@example.pt"
@@ -410,13 +424,15 @@ class LanguagePreferenceTests(TestCase):
         self.assertContains(response, "Administração do site")
         self.assertContains(response, 'aria-label="Mudar idioma para inglês"')
         self.assertContains(response, ">GB<")
-        self.assertContains(response, "🇬🇧")
-        self.assertNotContains(response, "🇵🇹")
+        self.assertContains(response, "united-kingdom.svg")
+        self.assertNotContains(response, "portugal.svg")
         self.assertEqual(response.content.count(b'class="language-flag"'), 1)
         self.assertRegex(
             response.content.decode(),
-            r'class="language-code">GB</span><span class="language-flag-icon" aria-hidden="true">🇬🇧</span>',
+            r'class="language-code">GB</span>\s*<img class="language-flag-icon" src="[^"]*united-kingdom\.svg"',
         )
+        self.assertContains(response, 'data-theme-toggle')
+        self.assertContains(response, "/static/timesheets/theme.js")
 
     def test_portuguese_dashboard_shows_only_the_english_switch(self):
         self.client.force_login(self.user)
@@ -424,13 +440,16 @@ class LanguagePreferenceTests(TestCase):
         self.assertEqual(response.wsgi_request.LANGUAGE_CODE, "pt-pt")
         self.assertContains(response, 'aria-label="Mudar idioma para inglês"')
         self.assertContains(response, ">GB<")
-        self.assertContains(response, "🇬🇧")
-        self.assertNotContains(response, "🇵🇹")
+        self.assertContains(response, "united-kingdom.svg")
+        self.assertNotContains(response, "portugal.svg")
         self.assertEqual(response.content.count(b'class="language-flag"'), 1)
         self.assertRegex(
             response.content.decode(),
-            r'class="language-code">GB</span><span class="language-flag-icon" aria-hidden="true">🇬🇧</span>',
+            r'class="language-code">GB</span>\s*<img class="language-flag-icon" src="[^"]*united-kingdom\.svg"',
         )
+        self.assertContains(response, 'data-theme-toggle')
+        self.assertContains(response, "/static/timesheets/theme.js")
+        self.assertContains(response, "/static/timesheets/style.css")
 
     def test_model_validation_error_is_translated(self):
         client_record = Client.objects.create(
