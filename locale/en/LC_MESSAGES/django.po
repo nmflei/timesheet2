@@ -146,6 +146,9 @@ msgstr "Contact name"
 msgid "Projetos associados"
 msgstr "Associated projects"
 
+msgid "Adicionar novo projeto"
+msgstr "Add new project"
+
 msgid "Este cliente ainda não tem projetos associados."
 msgstr "This client has no associated projects yet."
 

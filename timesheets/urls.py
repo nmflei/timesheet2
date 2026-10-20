@@ -12,6 +12,7 @@ urlpatterns = [
     path("clientes/<int:pk>/editar/", views.client_edit, name="client_edit"),
     path("projetos/", views.project_list, name="project_list"),
     path("projetos/novo/", views.project_create, name="project_create"),
+    path("clientes/<int:pk>/projetos/novo/", views.project_create_for_client, name="project_create_for_client"),
     path("projetos/<int:pk>/editar/", views.project_edit, name="project_edit"),
     path("api/clientes/<int:client_id>/projetos/", views.projects_for_client, name="projects_for_client"),
     path("folhas/nova/", views.timesheet_create, name="timesheet_create"),

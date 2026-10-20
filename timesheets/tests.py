@@ -241,9 +241,92 @@ class ClientManagementTests(TestCase):
         response = self.client.get(reverse("client_detail", args=[self.client_record.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Projetos associados")
+        self.assertContains(response, "Adicionar novo projeto")
+        self.assertContains(
+            response,
+            reverse("project_create_for_client", args=[self.client_record.pk]),
+        )
         self.assertContains(response, "Projeto Lisboa")
         self.assertContains(response, "Rua da Empresa, 12")
         self.assertContains(response, "1250-096")
+
+    def test_add_project_from_client_prefills_and_locks_client_then_returns_to_detail(self):
+        response = self.client.get(
+            reverse("project_create_for_client", args=[self.client_record.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Novo projeto")
+        self.assertContains(
+            response,
+            f'<input type="hidden" name="client" value="{self.client_record.pk}"',
+            html=False,
+        )
+
+        response = self.client.post(
+            reverse("project_create_for_client", args=[self.client_record.pk]),
+            {
+                "client": self.client_record.pk,
+                "name": "Novo Projeto Associado",
+                "location": "Porto",
+                "approver_name": "João",
+                "approver_email": "joao@example.pt",
+                "normal_hour_rate": "15.00",
+                "overtime_hour_rate": "22.00",
+                "sunday_hour_rate": "30.00",
+            },
+        )
+        new_project = Project.objects.get(name="Novo Projeto Associado")
+        self.assertEqual(new_project.client, self.client_record)
+        self.assertRedirects(
+            response,
+            reverse("client_detail", args=[self.client_record.pk]),
+        )
+        detail = self.client.get(response.url)
+        self.assertContains(detail, new_project.name)
+
+    def test_add_project_from_client_rejects_a_different_submitted_client(self):
+        other_client = Client.objects.create(
+            company_name="Outro Cliente",
+            address="Rua de Outra, 1",
+            tax_number="509876544",
+            contact_name="Outro Contacto",
+            email="outro@example.pt",
+        )
+        response = self.client.post(
+            reverse("project_create_for_client", args=[self.client_record.pk]),
+            {
+                "client": other_client.pk,
+                "name": "Projeto de cliente errado",
+                "location": "Porto",
+                "approver_name": "João",
+                "approver_email": "joao@example.pt",
+                "normal_hour_rate": "15.00",
+                "overtime_hour_rate": "22.00",
+                "sunday_hour_rate": "30.00",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Project.objects.filter(name="Projeto de cliente errado").exists())
+        self.assertIn("client", response.context["form"].errors)
+
+    def test_add_project_from_client_is_translated_into_english(self):
+        self.client.cookies["timesheet_language"] = "en"
+        detail = self.client.get(reverse("client_detail", args=[self.client_record.pk]))
+        self.assertContains(detail, "Add new project")
+        form = self.client.get(
+            reverse("project_create_for_client", args=[self.client_record.pk])
+        )
+        self.assertContains(form, "New project")
+
+    def test_non_manager_cannot_add_project_from_client(self):
+        employee = get_user_model().objects.create_user(
+            username="employee", password="test-password", email="employee@example.pt"
+        )
+        self.client.force_login(employee)
+        response = self.client.get(
+            reverse("project_create_for_client", args=[self.client_record.pk])
+        )
+        self.assertEqual(response.status_code, 403)
 
     def test_client_list_visibly_renders_associated_project_names_in_portuguese(self):
         response = self.client.get(reverse("client_list"))

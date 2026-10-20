@@ -21,7 +21,10 @@
     {% if client.country %} · {{ client.country }}{% endif %}
   </p>
   <div class="associated-projects">
-    <h3>{% trans "Projetos associados" %}</h3>
+    <div class="page-heading">
+      <h3>{% trans "Projetos associados" %}</h3>
+      <a class="button secondary small" href="{% url 'project_create_for_client' client.pk %}">{% trans "Adicionar novo projeto" %}</a>
+    </div>
     {% with projects=client.projects.all %}
       {% if projects %}
       <ul class="associated-project-list">

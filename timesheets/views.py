@@ -265,17 +265,43 @@ def project_create(request):
 
 
 @login_required
+def project_create_for_client(request, pk):
+    if not is_manager(request.user):
+        raise PermissionDenied
+    client = get_object_or_404(Client, pk=pk)
+    return manage_object(
+        request,
+        ProjectForm,
+        "timesheets/object_form.html",
+        _("Novo projeto"),
+        "client_detail",
+        success_kwargs={"pk": client.pk},
+        form_kwargs={"fixed_client": client},
+    )
+
+
+@login_required
 def project_edit(request, pk):
     return manage_object(request, ProjectForm, "timesheets/object_form.html", _("Editar projeto"), "project_list", Project, pk)
 
 
-def manage_object(request, form_class, template, title, success_url, model=None, pk=None):
+def manage_object(
+    request,
+    form_class,
+    template,
+    title,
+    success_url,
+    model=None,
+    pk=None,
+    form_kwargs=None,
+    success_kwargs=None,
+):
     if not is_manager(request.user):
         raise PermissionDenied
     instance = get_object_or_404(model, pk=pk) if model and pk else None
-    form = form_class(request.POST or None, instance=instance)
+    form = form_class(request.POST or None, instance=instance, **(form_kwargs or {}))
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, _("%(title)s guardado.") % {"title": title})
-        return redirect(success_url)
+        return redirect(success_url, **(success_kwargs or {}))
     return render(request, template, {"form": form, "title": title})

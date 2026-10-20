@@ -36,6 +36,13 @@ class ProjectForm(forms.ModelForm):
             "sunday_hour_rate",
         ]
 
+    def __init__(self, *args, fixed_client=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if fixed_client is not None:
+            self.fields["client"].queryset = Client.objects.filter(pk=fixed_client.pk)
+            self.fields["client"].initial = fixed_client.pk
+            self.fields["client"].widget = forms.HiddenInput()
+
 
 class TimesheetCreateForm(forms.ModelForm):
     class Meta:

@@ -21,7 +21,10 @@
   <p><strong>{% trans "Nome do contacto" %}:</strong> {{ client.contact_name }} · {{ client.email }}</p>
 </section>
 <section class="panel">
-  <h2>{% trans "Projetos associados" %}</h2>
+  <div class="page-heading">
+    <h2>{% trans "Projetos associados" %}</h2>
+    <a class="button primary" href="{% url 'project_create_for_client' client.pk %}">{% trans "Adicionar novo projeto" %}</a>
+  </div>
   {% with projects=client.projects.all %}
   {% if projects %}
   <div class="table-wrap">
