@@ -220,11 +220,19 @@ def client_list(request):
         raise PermissionDenied
     return render(request, "timesheets/management_list.html", {
         "title": _("Clientes"),
-        "objects": Client.objects.all(),
+        "objects": Client.objects.prefetch_related("projects"),
         "create_url": "client_create",
         "edit_url": "client_edit",
         "object_label": _("cliente"),
     })
+
+
+@login_required
+def client_detail(request, pk):
+    if not is_manager(request.user):
+        raise PermissionDenied
+    client = get_object_or_404(Client.objects.prefetch_related("projects"), pk=pk)
+    return render(request, "timesheets/client_detail.html", {"client": client})
 
 
 @login_required

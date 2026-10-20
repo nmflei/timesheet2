@@ -8,7 +8,18 @@ from .models import Client, DayEntry, Project, Timesheet
 class ClientForm(forms.ModelForm):
     class Meta:
         model = Client
-        fields = ["company_name", "address", "tax_number", "contact_name", "email"]
+        fields = [
+            "company_name",
+            "address",
+            "postal_code",
+            "locality",
+            "district",
+            "country",
+            "tax_number",
+            "contact_name",
+            "email",
+        ]
+        widgets = {"address": forms.TextInput()}
 
 
 class ProjectForm(forms.ModelForm):

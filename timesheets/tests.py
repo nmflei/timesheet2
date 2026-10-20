@@ -9,7 +9,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import translation
 
-from .forms import TimesheetCreateForm
+from .forms import ClientForm, TimesheetCreateForm
 from .models import Client, DayEntry, Project, Timesheet
 
 
@@ -184,6 +184,94 @@ class TimesheetRulesTests(TestCase):
         )
         self.assertFalse(form.is_valid())
         self.assertIn("project", form.errors)
+
+
+class ClientManagementTests(TestCase):
+    def setUp(self):
+        self.manager = get_user_model().objects.create_user(
+            username="manager", password="test-password", email="manager@example.pt", is_staff=True
+        )
+        self.client_record = Client.objects.create(
+            company_name="Cliente Exemplo",
+            address="Rua da Empresa, 12",
+            tax_number="501234567",
+            contact_name="Ana Contacto",
+            email="ana@example.pt",
+            postal_code="1250-096",
+            locality="Lisboa",
+            district="Lisboa",
+            country="Portugal",
+        )
+        self.project = Project.objects.create(
+            client=self.client_record,
+            name="Projeto Lisboa",
+            location="Lisboa",
+            approver_name="Rui",
+            approver_email="rui@example.pt",
+        )
+        self.client.force_login(self.manager)
+
+    def test_client_form_uses_single_line_address_and_accepts_structured_address(self):
+        form = ClientForm(
+            data={
+                "company_name": "Novo Cliente",
+                "address": "Avenida da Liberdade, 10",
+                "postal_code": "1250-096",
+                "locality": "Lisboa",
+                "district": "Lisboa",
+                "country": "Portugal",
+                "tax_number": "509876543",
+                "contact_name": "Joana",
+                "email": "joana@example.pt",
+            }
+        )
+        self.assertEqual(form.fields["address"].widget.__class__.__name__, "TextInput")
+        self.assertTrue(form.is_valid(), form.errors)
+        client_record = form.save()
+        self.assertEqual(client_record.postal_code, "1250-096")
+        self.assertEqual(client_record.locality, "Lisboa")
+        self.assertEqual(client_record.district, "Lisboa")
+        self.assertEqual(client_record.country, "Portugal")
+
+        response = self.client.get(reverse("client_edit", args=[self.client_record.pk]))
+        self.assertContains(response, 'type="text" name="address"')
+        self.assertNotContains(response, '<textarea name="address"')
+
+    def test_client_detail_lists_associated_projects_and_address(self):
+        response = self.client.get(reverse("client_detail", args=[self.client_record.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Projetos associados")
+        self.assertContains(response, "Projeto Lisboa")
+        self.assertContains(response, "Rua da Empresa, 12")
+        self.assertContains(response, "1250-096")
+
+    def test_client_detail_shows_empty_projects_message(self):
+        client_without_projects = Client.objects.create(
+            company_name="Sem projetos",
+            address="Rua Nova, 1",
+            tax_number="509876544",
+            contact_name="Contacto",
+            email="contacto@example.pt",
+        )
+        response = self.client.get(reverse("client_detail", args=[client_without_projects.pk]))
+        self.assertContains(response, "Este cliente ainda não tem projetos associados.")
+
+    def test_client_form_translates_structured_address_fields(self):
+        self.client.cookies["timesheet_language"] = "en"
+        response = self.client.get(reverse("client_edit", args=[self.client_record.pk]))
+        self.assertContains(response, "Full address")
+        self.assertContains(response, "Postcode")
+        self.assertContains(response, "Locality")
+        self.assertContains(response, "District")
+        self.assertContains(response, "Country")
+
+    def test_non_manager_cannot_view_client_detail(self):
+        employee = get_user_model().objects.create_user(
+            username="employee", password="test-password", email="employee@example.pt"
+        )
+        self.client.force_login(employee)
+        response = self.client.get(reverse("client_detail", args=[self.client_record.pk]))
+        self.assertEqual(response.status_code, 403)
 
 
 class TimesheetWorkflowTests(TestCase):

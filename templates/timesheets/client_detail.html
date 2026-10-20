@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ client.company_name }}{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <h1>{{ client.company_name }}</h1>
+  <a class="button secondary" href="{% url 'client_edit' client.pk %}">{% trans "Editar" %}</a>
+</div>
+<section class="panel">
+  <h2>{% trans "Detalhes" %}</h2>
+  <p><strong>{% trans "Morada completa" %}:</strong> {{ client.address }}</p>
+  {% if client.postal_code or client.locality or client.district or client.country %}
+  <p>
+    {% if client.postal_code %}{{ client.postal_code }}{% endif %}
+    {% if client.locality %} {{ client.locality }}{% endif %}
+    {% if client.district %} · {{ client.district }}{% endif %}
+    {% if client.country %} · {{ client.country }}{% endif %}
+  </p>
+  {% endif %}
+  <p><strong>{% trans "NIF" %}:</strong> {{ client.tax_number }}</p>
+  <p><strong>{% trans "Nome do contacto" %}:</strong> {{ client.contact_name }} · {{ client.email }}</p>
+</section>
+<section class="panel">
+  <h2>{% trans "Projetos associados" %}</h2>
+  {% with projects=client.projects.all %}
+  {% if projects %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>{% trans "Nome" %}</th><th>{% trans "Localização" %}</th><th>{% trans "Aprovação" %}</th></tr></thead>
+      <tbody>
+        {% for project in projects %}
+        <tr>
+          <td><a href="{% url 'project_edit' project.pk %}">{{ project.name }}</a></td>
+          <td>{{ project.location }}</td>
+          <td>{{ project.approver_name }} · {{ project.approver_email }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">{% trans "Este cliente ainda não tem projetos associados." %}</p>
+  {% endif %}
+  {% endwith %}
+</section>
+<a class="button secondary" href="{% url 'client_list' %}">{% trans "Voltar aos clientes" %}</a>
+{% endblock %}

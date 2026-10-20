@@ -125,6 +125,33 @@ msgstr "Name"
 msgid "Detalhes"
 msgstr "Details"
 
+msgid "Morada completa"
+msgstr "Street address"
+
+msgid "Código postal"
+msgstr "Postcode"
+
+msgid "Localidade"
+msgstr "Locality"
+
+msgid "Distrito"
+msgstr "District"
+
+msgid "País"
+msgstr "Country"
+
+msgid "Nome do contacto"
+msgstr "Contact name"
+
+msgid "Projetos associados"
+msgstr "Associated projects"
+
+msgid "Este cliente ainda não tem projetos associados."
+msgstr "This client has no associated projects yet."
+
+msgid "Voltar aos clientes"
+msgstr "Back to clients"
+
 msgid "NIF"
 msgstr "Tax number"
 
@@ -250,6 +277,18 @@ msgstr "Company name"
 
 msgid "morada completa"
 msgstr "Full address"
+
+msgid "código postal"
+msgstr "Postcode"
+
+msgid "localidade"
+msgstr "Locality"
+
+msgid "distrito"
+msgstr "District"
+
+msgid "país"
+msgstr "Country"
 
 msgid "nome do contacto"
 msgstr "Contact name"
